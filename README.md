@@ -60,7 +60,7 @@ expBASIC currently supports:
 --- 
 
 <p align="center">
-  <img src="images/expbasic-game.png"
+  <img src="images/expBASIC-1.png"
        alt="expBASIC running the Number Guessing Game"
        width="700">
 </p>
