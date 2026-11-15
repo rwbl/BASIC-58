@@ -239,4 +239,5 @@ SAVE AND LOAD TEST
 - `16_RANDOM_NUMBERS.BAS` uses a fixed seed, so the tested sequence is repeatable.
 - `17_PRINT_FORMATTING.BAS` demonstrates spacing and tab positioning; exact visual spacing depends on the terminal display.
 - `15_RESTORE.BAS` uses the currently implemented plain `RESTORE` form, which resets DATA reading to the beginning.
-- `50_...BAS` some example games.
+- `20_...BAS` and higher other examples.
+- `50_...BAS` and higher example games.

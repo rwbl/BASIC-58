@@ -4,13 +4,15 @@ File1=MainPage.bjl
 FileGroup1=New Group
 Group=Default Group
 Library1=b4xpages
-Library2=jcore
-Library3=jfx
-Library4=cssutils
+Library2=cssutils
+Library3=jcore
+Library4=jfx
+Library5=designerutils
 Module1=|relative|..\B4XMainPage
+Module2=|relative|..\DesignerToolbar
 NumberOfFiles=1
-NumberOfLibraries=4
-NumberOfModules=1
+NumberOfLibraries=5
+NumberOfModules=2
 Version=10.7
 @EndOfDesignText@
 #Region Project Attributes 

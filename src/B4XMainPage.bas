@@ -6,11 +6,11 @@ Version=9.85
 @EndOfDesignText@
 ' ================================================================
 ' File:			B4XMainPage
-' Project:		expBASIC
-' Brief:		Development program for expBASIC.
+' Project:		BASIC-58
+' Brief:		Development program for BASIC-58.
 ' Date:			See Class_Globals VERSION
 ' Author:		Robert W.B. Linn (c) 2026 MIT License
-' Description:	This page is used to develop & test expBASIC.
+' Description:	This page is used to develop & test BASIC-58.
 ' DependsOn:	CSSUtils.
 ' ================================================================
 
@@ -22,24 +22,34 @@ Version=9.85
 #Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
 
 Sub Class_Globals
-	' A tiny BASIC interpreter 
-	Private VERSION As String = "expBASIC v20261114 ALPHA"
+	' A tiny BASIC interpreter
+	Private VERSION As String = "BASIC-58"
+	'Private VERSION As String = "BASIC-58 v20261115 ALPHA"
 
+	' Core
 	Private fx As JFX
 	Private xui As XUI
 
+	' UI
 	Private Root As B4XView
-	Private btnRun As B4XView
+	Private pnToolbar As B4XView
+	Private lblToolbar As B4XView
+	Private tfCommand As B4XView
+	Private taEditor As B4XView
+	Private taOutput As B4XView
+	Private lblFile As B4XView
+	Private lblEditor As B4XView
+	Private pnEditor As B4XView
+	Private pnOutput As B4XView
 	Private lblStatus As B4XView
-	Private txtCommand As B4XView
-	Private txtScreen As B4XView
+
+	' Toolbar
+	Private DesignerUtils As DDD
 
 	' Constants
 	Private MAX_VAR_LENGTH As Int = 8
 
-	Private ProgramDir As String
 	Private ProgramLines As Map
-	
 	Private Variables As Map
 
 	'Program execution state
@@ -65,6 +75,13 @@ Sub Class_Globals
 	Private DataItems As List
 	Private DataPosition As Int
 
+	' Files & Editor
+	Private CurrentFileName As String
+	Private CurrentFilePath As String
+	Private ProgramModified As Boolean
+	Private LoadingProgram As Boolean
+	Private UpdatingEditor As Boolean
+	
 	'Error handling.
 	Private ErrorHandlerLine As Int				'BASIC line number of the error handler
 	Private ErrorHandlerEnabled As Boolean		'Indicates whether an error handler Is registered
@@ -84,29 +101,34 @@ End Sub
 'This event will be called once, before the page becomes visible.
 Private Sub B4XPage_Created (Root1 As B4XView)
 	Root = Root1
+	DesignerUtils.Initialize
 	Root.LoadLayout("MainPage")
+	
+	' Log(GetSystemProperty("javafx.runtime.version", "unknown"))
 	
 	ProgramLines.Initialize
 	RunLines.Initialize
 	Variables.Initialize
 	
-	'Create RetexpBASIC data directory.
-	ProgramDir = File.DirApp
-	' File.Combine(File.DirApp, "RetexpBASIC")
-	' File.MakeDir(File.DirUserHome, "RetexpBASIC")
+	'Create BASIC58 data directory.
+	CurrentFilePath = File.DirApp
+	' File.Combine(File.DirApp, "BASIC58")
+	' File.MakeDir(File.DirUserHome, "BASIC58")
+	ProgramModified = False
 	
 	' UI
-	B4XPages.SetTitle(Me, VERSION)
+	' BASIC-58 - NUMBERGAME.BAS *
+	UpdatePageTitle
 	B4XPages.GetNativeParent(Me).Resizable = False
 	lblStatus.Text = "READY"
-	
+		
 	' For tests
-	txtCommand.Text = "LOAD"
-	txtCommand_Action
-	txtCommand.Text = "LIST"
-	txtCommand_Action
-'	txtCommand.Text = "RUN"
-'	txtCommand_Action
+	tfCommand.Text = "LOAD"
+	tfCommand_Action
+'	tfCommand.Text = "LIST"
+'	tfCommand_Action
+'	tfCommand.Text = "RUN"
+'	tfCommand_Action
 	
 	InitializeUIStyle
 	
@@ -114,6 +136,8 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	' InitializeScreen
 End Sub
 
+' InitializeUIStyle
+' VT220 Amber
 Private Sub InitializeUIStyle
 	'--------------------------------------------------
 	' Main application
@@ -122,53 +146,69 @@ Private Sub InitializeUIStyle
 	' Root.SetColorAndBorder(xui.Color_ARGB(0xFF,0xDC,0xD6,0xC8), 2, xui.Color_ARGB(0xFF,0x4A,0x48,0x45), 0)
 
 	'--------------------------------------------------
-	' Terminal screen - VT220 Amber
+	' Toolbar Label (aka Buttons) See Class DesignerToolbar
 	'--------------------------------------------------
-	CSSUtils.SetStyleProperty(txtScreen, "-fx-control-inner-background", "#191713")
-	CSSUtils.SetStyleProperty(txtScreen, "-fx-text-fill", "#FFBF69")
-	CSSUtils.SetStyleProperty(txtScreen, "-fx-highlight-fill", "#80613A")
-	CSSUtils.SetStyleProperty(txtScreen, "-fx-highlight-text-fill", "#FFFFFF")
-	CSSUtils.SetStyleProperty(txtScreen, "-fx-border-color", "#80613A")
-	CSSUtils.SetStyleProperty(txtScreen, "-fx-border-width", "2")
+	CSSUtils.SetBackgroundColor(pnToolbar, fx.Colors.From32Bit(0xFFDCD6C8))
+	lblToolbar.Font = fx.CreateFont("Consolas", 16, True, False)
+	CSSUtils.SetStyleProperty(lblToolbar, "-fx-text-fill", "#4A4845")
 
-	txtScreen.Font = fx.CreateFont("Consolas", 16, False, False)
+	'--------------------------------------------------
+	' PROGRAM & FILE
+	'--------------------------------------------------
+	lblEditor.Font = fx.CreateFont("Consolas", 16, True, False)
+	CSSUtils.SetStyleProperty(lblEditor, "-fx-text-fill", "#4A4845")
+	lblFile.Font = fx.CreateFont("Consolas", 16, True, False)
+	CSSUtils.SetStyleProperty(lblFile, "-fx-text-fill", "#4A4845")
+
+	'--------------------------------------------------
+	' Editor Area
+	'--------------------------------------------------
+	CSSUtils.SetStyleProperty(taEditor, "-fx-control-inner-background", "#191713")
+	CSSUtils.SetStyleProperty(taEditor, "-fx-text-fill", "#FFBF69")
+	CSSUtils.SetStyleProperty(taEditor, "-fx-highlight-fill", "#80613A")
+	CSSUtils.SetStyleProperty(taEditor, "-fx-highlight-text-fill", "#FFFFFF")
+	CSSUtils.SetStyleProperty(taEditor, "-fx-border-color", "#80613A")
+	CSSUtils.SetStyleProperty(taEditor, "-fx-border-width", "2")
+	taEditor.Font = fx.CreateFont("Consolas", 16, False, False)
+	
+	'--------------------------------------------------
+	' Output Area
+	'--------------------------------------------------
+	CSSUtils.SetStyleProperty(taOutput, "-fx-control-inner-background", "#191713")
+	CSSUtils.SetStyleProperty(taOutput, "-fx-text-fill", "#FFBF69")
+	CSSUtils.SetStyleProperty(taOutput, "-fx-highlight-fill", "#80613A")
+	CSSUtils.SetStyleProperty(taOutput, "-fx-highlight-text-fill", "#FFFFFF")
+	CSSUtils.SetStyleProperty(taOutput, "-fx-border-color", "#80613A")
+	CSSUtils.SetStyleProperty(taOutput, "-fx-border-width", "2")
+	taOutput.Font = fx.CreateFont("Consolas", 16, False, False)
 
 	'--------------------------------------------------
 	' Command input
 	'--------------------------------------------------
-	CSSUtils.SetStyleProperty(txtCommand, "-fx-background-color", "#211B13")
-	CSSUtils.SetStyleProperty(txtCommand, "-fx-text-fill", "#FFBF69")
-	CSSUtils.SetStyleProperty(txtCommand, "-fx-prompt-text-fill", "#C9954A")
-	CSSUtils.SetStyleProperty(txtCommand, "-fx-border-color", "#80613A")
-	CSSUtils.SetStyleProperty(txtCommand, "-fx-border-width", "1")
-
-	txtCommand.Font = fx.CreateFont("Consolas", 17, False, False)
-
-	'--------------------------------------------------
-	' Execute button
-	'--------------------------------------------------
-	CSSUtils.SetStyleProperty(btnRun, "-fx-background-color", "#58544E")	'"#E0E2DC")
-	CSSUtils.SetStyleProperty(btnRun, "-fx-text-fill", "#F2EFE9")			' "#303830")
-	CSSUtils.SetStyleProperty(btnRun, "-fx-border-color", "#8B9489")
+	CSSUtils.SetStyleProperty(tfCommand, "-fx-background-color", "#211B13")
+	CSSUtils.SetStyleProperty(tfCommand, "-fx-text-fill", "#FFBF69")
+	CSSUtils.SetStyleProperty(tfCommand, "-fx-prompt-text-fill", "#C9954A")
+	CSSUtils.SetStyleProperty(tfCommand, "-fx-border-color", "#80613A")
+	CSSUtils.SetStyleProperty(tfCommand, "-fx-border-width", "1")
+	tfCommand.Font = fx.CreateFont("Consolas", 17, False, False)
 
 	'--------------------------------------------------
 	' Status
 	'--------------------------------------------------
 	lblStatus.Font = fx.CreateFont("Consolas", 12, True, False)
-	' CSSUtils.SetStyleProperty(lblStatus, "-fx-text-fill", "#465448")
 	CSSUtils.SetStyleProperty(lblStatus, "-fx-text-fill", "#4A4845")
 
 End Sub
 
 Private Sub InitializeScreen	'ignore
 
-	PrintText("**** RETRO BASIC ****")
-	PrintText("")
-	PrintText("B4J BASIC INTERPRETER")
-	PrintText("")
-	PrintText("TYPE HELP FOR COMMANDS")
-	PrintText("")
-	PrintText("READY.")
+	PrintText(taOutput, "**** BASIC-58 ****")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "BASIC INTERPRETER")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "TYPE HELP FOR COMMANDS")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "READY.")
 
 	lblStatus.Text = "READY"
 End Sub
@@ -177,18 +217,18 @@ Private Sub btnRun_Click
     ProcessInput
 End Sub
 
-Private Sub txtCommand_Action
+Private Sub tfCommand_Action
     ProcessInput
 End Sub
 
 Private Sub ProcessInput
-	Dim Command As String = txtCommand.Text.Trim
+	Dim Command As String = tfCommand.Text.Trim
 
 	If Command = "" Then Return
 
 	' Log("INPUT: " & Command)
 
-	txtCommand.Text = ""
+	tfCommand.Text = ""
 
 	'If the BASIC program is waiting for INPUT,
 	'treat the entered text as the variable value.
@@ -200,14 +240,14 @@ Private Sub ProcessInput
 			WaitingForInput = False
 			RunPosition = RunLines.Size
 			InputVariables.Clear
-			PrintText("BREAK")
-			PrintText("READY.")
-			txtCommand.RequestFocus
+			PrintText(taOutput, "BREAK")
+			PrintText(taOutput, "READY.")
+			tfCommand.RequestFocus
 			Return
 		End If
 		
 		'Display the entered input in the terminal.
-		PrintText(Command)
+		PrintText(taEditor, Command)
 		
 		Dim InputValues As List
 		InputValues.Initialize
@@ -263,9 +303,9 @@ Private Sub ProcessInput
 		End If
 
 		If ValidInput = False Then
-			PrintText("?REDO FROM START")
-			PrintText(InputPrompt & "?")
-			txtCommand.RequestFocus
+			PrintText(taOutput, "?REDO FROM START")
+			PrintText(taOutput, InputPrompt & "?")
+			tfCommand.RequestFocus
 			Return
 		End If
 
@@ -281,13 +321,13 @@ Private Sub ProcessInput
 
 		ContinueProgram
 
-		txtCommand.RequestFocus
+		tfCommand.RequestFocus
 		Return
 	End If
 	
 	ExecuteCommand(Command)
 
-	txtCommand.RequestFocus
+	tfCommand.RequestFocus
 End Sub
 
 Private Sub ExecuteCommand(Command As String)
@@ -311,7 +351,7 @@ Private Sub ExecuteCommand(Command As String)
 				ProgramLines.Remove(LineNumber)
 			Else
 				ProgramLines.Put(LineNumber, LineCode)
-				PrintText("STORED: " & LineNumber & " = " & LineCode)
+				PrintText(taOutput, "STORED: " & LineNumber & " = " & LineCode)
 			End If
 
 			Return
@@ -332,7 +372,7 @@ Private Sub ExecuteCommand(Command As String)
 	' Other commands
 	Select Case UpperCommand
 		Case "CLS"
-			txtScreen.Text = ""
+			taOutput.Text = ""
 
 		Case "HELP"
 			ExecuteHelp
@@ -344,16 +384,26 @@ Private Sub ExecuteCommand(Command As String)
 			RunProgram
 
 		Case "NEW"
+			If ProgramModified Then
+				Dim sf As Object = xui.Msgbox2Async("Save program?", "Confirm", "Yes", "Cancel", "No", Null)
+				Wait For (sf) Msgbox_Result (Result As Int)
+				If Result = xui.DialogResponse_Positive Then
+					Save
+				End If
+			End If
 			ProgramLines.Clear
 			Variables.Clear
 			WaitingForInput = False
-			PrintText("NEW PROGRAM")
+			taEditor.Text = ""
+			CurrentFileName = "NEWPROGRAM.BAS"
+			CurrentFilePath = File.DirApp
+			PrintText(taOutput, "NEW PROGRAM")
 			
 		Case Else
 			If UpperCommand.StartsWith("PRINT ") Then
 				PrintBasicText(Command)
 			Else
-				PrintText("?SYNTAX ERROR")
+				PrintText(taOutput, "?SYNTAX ERROR")
 			End If
 	End Select
 
@@ -401,8 +451,9 @@ Private Sub ExecuteLet(LineCode As String) As Boolean
 	Dim Result As Double = EvaluateNumericExpression(Expression)
 	If ExprError Then Return False
 
-	Variables.Put(VariableName, NumberFormat(Result, 1, 6))
-
+	' Log("LET: " & VariableName & " = " & NumberFormat(Result, 1, 6))	
+	Variables.Put(VariableName, NumberFormat2(Result, 1, 0, 10, False))
+	
 	Return True
 End Sub
 
@@ -639,17 +690,19 @@ Private Sub CollectData
 End Sub
 
 Private Sub RunProgram
+	UpdateProgramLines
+	
 	If ProgramLines.Size = 0 Then
-		PrintText("NO PROGRAM")
+		PrintText(taOutput, "NO PROGRAM")
 		Return
 	End If
 
 	Variables.Clear
 	WaitingForInput = False
 
-	PrintText("")
-	PrintText("RUNNING...")
-	PrintText("")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "RUNNING...")
+	PrintText(taOutput, "")
 
 	'Get program line numbers in numerical order.
 	RunLines.Initialize
@@ -675,7 +728,7 @@ Private Sub RunProgram
 	Else
 		GosubStack.Clear
 	End If
-	
+
 	ResetErrorHandler
 	ContinueProgram
 End Sub
@@ -907,14 +960,14 @@ Private Sub ContinueProgram
 	Loop
 
 	WaitingForInput = False
-	PrintText("")
-	PrintText("READY.")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "READY.")
 End Sub
 
 Private Sub PrintBasicText(LineCode As String) As Boolean
 	'Empty PRINT statement produces a blank line.
 	If LineCode.Trim.ToUpperCase = "PRINT" Then
-		PrintText("")
+		PrintText(taOutput, "")
 		Return True
 	End If
 
@@ -1014,10 +1067,10 @@ Private Sub PrintBasicText(LineCode As String) As Boolean
 
 	'Print result.
 	If LastSeparator = ";" Or LastSeparator = "," Then
-		txtScreen.Text = txtScreen.Text & Output
-		txtScreen.SetSelection(txtScreen.Text.Length, 0)
+		taOutput.Text = taEditor.Text & Output
+		taOutput.SetSelection(taEditor.Text.Length, 0)
 	Else
-		PrintText(Output)
+		PrintText(taOutput, Output)
 	End If
 	
 	Return True
@@ -1037,23 +1090,22 @@ Private Sub EvaluatePrintItem(Item As String) As String
 
 	Dim NumericResult As Double = EvaluateNumericExpression(Item)
 	If ExprError Then Return "?ILLEGAL EXPRESSION"
-	Return NumberFormat(NumericResult, 1, 6)
+	Return FormatNumber(NumericResult)
 End Sub
 
-Private Sub PrintText(Value As String)
-	Dim NativeTextArea As JavaObject = txtScreen
+Private Sub PrintText(Target As B4XView, Value As String)
+	Dim NativeTextArea As JavaObject = Target
 	NativeTextArea.RunMethod("appendText", Array(Value & CRLF))
 	NativeTextArea.RunMethod("positionCaret", Array(NativeTextArea.RunMethod("getLength", Null)))
-End Sub
 
-'Private Sub PrintText(Value As String)
-'    txtScreen.Text = txtScreen.Text & Value & CRLF
-'	txtScreen.SetSelection(txtScreen.Text.Length, 0)
-'End Sub
+	If Target.Tag = taOutput.Tag Then
+		Wait For (ScrollTextToBottom(taOutput)) Complete (Success As Boolean)		
+	End If
+End Sub
         
 Private Sub ListProgram
 	If ProgramLines.Size = 0 Then
-		PrintText("NO PROGRAM")
+		PrintText(taOutput, "NO PROGRAM")
 		Return
 	End If
 
@@ -1071,62 +1123,76 @@ Private Sub ListProgram
 	'Display the BASIC program.
 	For Each LineNumber As Int In LineNumbers
 		Dim LineCode As String = ProgramLines.Get(LineNumber)
-		PrintText(LineNumber & " " & LineCode)
+		PrintText(taOutput, LineNumber & " " & LineCode)
 	Next
 	
-	Wait For (ScrollTextToBottom) Complete (Success As Boolean)
+	Wait For (ScrollTextToBottom(taOutput)) Complete (Success As Boolean)
 End Sub
 
-Private Sub SaveProgram(FileName As String)
+Private Sub SaveProgram(FileName As String) As Boolean
+	UpdateProgramLines
+
+	'Log("EDITOR TEXT: " & taEditor.Text)
+	'Log("PROGRAM LINES: " & ProgramLines.Size)
+
 	If ProgramLines.Size = 0 Then
-		PrintText("NO PROGRAM")
-		Return
+		PrintText(taOutput, "NO PROGRAM")
+		Return False
 	End If
 
-	If FileName = "" Then FileName = "PROGRAM.BAS"
+	If FileName = "" Then 
+		FileName = "PROGRAM.BAS"
+	End If
 
 	If FileName.Contains("/") Or FileName.Contains("\") Then
-		PrintText("?INVALID FILE NAME")
-		Return
+		PrintText(taOutput, "?INVALID FILE NAME")
+		Return False
 	End If
 
 	If FileName.Contains(".") = False Then
 		FileName = FileName & ".bas"
 	End If
 
+	FileName = FileName.ToUpperCase
+
 	Try
-		Dim LineNumbers As List
-		LineNumbers.Initialize
-
-		For Each Key As Object In ProgramLines.Keys
-			LineNumbers.Add(Key)
-		Next
-
-		LineNumbers.Sort(True)
-
 		Dim SavedLines As List
 		SavedLines.Initialize
 
-		For Each LineNumber As Int In LineNumbers
-			Dim LineCode As String = ProgramLines.Get(LineNumber)
-			SavedLines.Add(LineNumber & " " & LineCode)
+		Dim EditorLines() As String = Regex.Split(CRLF, taEditor.Text)
+
+		For Each EditorLine As String In EditorLines
+			SavedLines.Add(EditorLine)
 		Next
 
-		File.WriteList(ProgramDir, FileName, SavedLines)
+		File.WriteList(CurrentFilePath, FileName, SavedLines)
 
-		PrintText("SAVED: " & FileName)
+		'Log("[SaveProgram] Exists: " & File.Exists(CurrentFilePath, FileName))
+		'Log("[SaveProgram] Size: " & File.Size(CurrentFilePath, FileName))
+		
+		CurrentFileName = FileName
+		ProgramModified = False
+		UpdatePageTitle
 
+		PrintText(taOutput, "SAVED: " & FileName)
+		
+		Return True
+		
 	Catch
-		PrintText("?SAVE ERROR")
-		Log($"[SaveProgram][E] ${LastException}"$)
+		PrintText(taOutput, "?SAVE ERROR")
+		'Log($"[SaveProgram][E] ${LastException}"$)
+		Return False
 	End Try
 End Sub
 
 Private Sub LoadProgram(FileName As String)
-	If FileName = "" Then FileName = "PROGRAM.BAS"
+	If FileName = "" Then 
+		FileName = "PROGRAM.BAS"
+		CurrentFileName = FileName
+	End If
 
 	If FileName.Contains("/") Or FileName.Contains("\") Then
-		PrintText("?INVALID FILE NAME")
+		PrintText(taOutput, $"?INVALID FILE NAME - ${FileName}"$)
 		Return
 	End If
 
@@ -1134,41 +1200,39 @@ Private Sub LoadProgram(FileName As String)
 		FileName = FileName & ".bas"
 	End If
 
-	If File.Exists(ProgramDir, FileName) = False Then
-		PrintText("?FILE NOT FOUND: " & FileName)
+	If File.Exists(CurrentFilePath, FileName) = False Then
+		PrintText(taOutput, "?FILE NOT FOUND: " & FileName)
 		Return
 	End If
 
 	Try
-		Dim SavedLines As List = File.ReadList(ProgramDir, FileName)
+		Dim SavedLines As List = File.ReadList(CurrentFilePath, FileName)
 
-		'Clear the current program.
-		ProgramLines.Clear
+		'Restore the complete source code in the editor.
+		Dim EditorText As StringBuilder
+		EditorText.Initialize
 
-		'Restore the saved BASIC program.
 		For Each SavedLine As String In SavedLines
-			Dim SpacePos As Int = SavedLine.IndexOf(" ")
-
-			If SpacePos > 0 Then
-				Dim NumberText As String = SavedLine.SubString2(0, SpacePos)
-
-				If IsNumber(NumberText) Then
-					Dim LineNumber As Int = NumberText
-					Dim LineCode As String = SavedLine.SubString(SpacePos + 1).Trim
-
-					If LineCode <> "" Then
-						ProgramLines.Put(LineNumber, LineCode)
-					End If
-				End If
+			If EditorText.Length > 0 Then
+				EditorText.Append(CRLF)
 			End If
+
+			EditorText.Append(SavedLine)
 		Next
 
-		PrintText("LOADED: " & FileName)
-		PrintText("LINES: " & ProgramLines.Size)
+		taEditor.Text = EditorText.ToString
+
+		'Rebuild the interpreter program.
+		UpdateProgramLines
+
+		lblFile.Text = FileName
+
+		PrintText(taOutput, "LOADED: " & FileName)
+		PrintText(taOutput, "LINES: " & ProgramLines.Size)
 
 	Catch
-		PrintText("?LOAD ERROR")
-		Log($"[LoadProgram][E] ${LastException}"$)
+		PrintText(taOutput, "?LOAD ERROR")
+		'Log($"[LoadProgram][E] ${LastException}"$)
 	End Try
 End Sub
 
@@ -1434,7 +1498,7 @@ Private Sub ParseFactor As Double
 	SkipSpaces
 
 	If ExprPos < ExprText.Length Then
-		Log("NEXT CHAR: " & ExprText.SubString2(ExprPos, ExprPos + 1))
+		'Log("NEXT CHAR: " & ExprText.SubString2(ExprPos, ExprPos + 1))
 	End If
 
 	'Function.
@@ -1627,8 +1691,14 @@ Private Sub ParseFactor As Double
 	End If
 
 	Dim VariableValue As String = Variables.Get(Name)
-	' Log("FACTOR: Variable=" & Name & ", Value=" & VariableValue)
+	'Log("FACTOR: Variable=" & Name & ", Value=" & VariableValue)
 
+	If IsNumber(VariableValue) = False Then
+		Log("INVALID NUMBER: " & Name & " = [" & VariableValue & "]")
+		ExprError = True
+		Return 0
+	End If
+	
 	If IsNumber(VariableValue) = False Then
 		ExprError = True
 		Return 0
@@ -1797,8 +1867,8 @@ Private Sub ExecuteFor(LineCode As String, BodyPosition As Int) As Boolean
 		Return False
 	End If
 
-	Variables.Put(VariableName, NumberFormat(StartValue, 1, 6))
-
+	Variables.Put(VariableName, NumberFormat2(StartValue, 1, 0, 10, False))
+	
 	'Check whether the loop should execute.
 	If (StepValue > 0 And StartValue > LimitValue) Or _
 		(StepValue < 0 And StartValue < LimitValue) Then
@@ -1841,8 +1911,8 @@ Private Sub ExecuteNext(LineCode As String) As Boolean
 
 	CurrentValue = CurrentValue + StepValue
 
-	Variables.Put(VariableName, NumberFormat(CurrentValue, 1, 6))
-
+	Variables.Put(VariableName, NumberFormat2(CurrentValue, 1, 0, 10, False))
+	
 	Dim ContinueLoop As Boolean
 
 	If StepValue > 0 Then
@@ -2011,7 +2081,7 @@ Private Sub ExecuteInput(LineCode As String) As Boolean
 	If AddInputVariable(CurrentVariable.ToString.Trim) = False Then Return False
 
 	'Display prompt.
-	PrintText(InputPrompt & "?")
+	PrintText(taOutput, InputPrompt & "?")
 
 	Return True
 End Sub
@@ -2517,7 +2587,7 @@ Private Sub HandleProgramError(Message As String) As Boolean
 
 	'Do not allow recursive error handling.
 	If ErrorHandlerRunning Or ErrorHandlerEnabled = False Then
-		PrintText(Message)
+		PrintText(taOutput, Message)
 		RunPosition = RunLines.Size
 		Return False
 	End If
@@ -2527,7 +2597,7 @@ Private Sub HandleProgramError(Message As String) As Boolean
 
 	'Validate the failing BASIC line position.
 	If ErrorLinePosition < 0 Or ErrorLinePosition >= RunLines.Size Then
-		PrintText(Message)
+		PrintText(taOutput, Message)
 		RunPosition = RunLines.Size
 		Return False
 	End If
@@ -2554,7 +2624,7 @@ Private Sub HandleProgramError(Message As String) As Boolean
 	Dim HandlerPosition As Int = FindRunPosition(ErrorHandlerLine)
 
 	If HandlerPosition < 0 Then
-		PrintText("?UNDEFINED ERROR HANDLER LINE " & ErrorHandlerLine)
+		PrintText(taOutput, "?UNDEFINED ERROR HANDLER LINE " & ErrorHandlerLine)
 		RunPosition = RunLines.Size
 		ErrorHandlerRunning = False
 		Return False
@@ -2645,82 +2715,248 @@ End Sub
 
 
 Private Sub ExecuteHelp
-
-	PrintText("expBASIC - HELP")
-	PrintText("==============================")
-
-	PrintText("")
-	PrintText("DIRECT COMMANDS")
-	PrintText("HELP              Show this help")
-	PrintText("LIST              List program")
-	PrintText("RUN               Run program")
-	PrintText("NEW               Clear program")
-	PrintText("SAVE [filename]   Save program")
-	PrintText("LOAD [filename]   Load program")
-	PrintText("CLS               Clear screen")
-	PrintText("PRINT expression  Print immediately")
-
-	PrintText("")
-	PrintText("PROGRAM STATEMENTS")
-	PrintText("LET variable = expression")
-	PrintText("INPUT [prompt;] variables")
-	PrintText("PRINT expressions")
-	PrintText("IF condition THEN line")
-	PrintText("GOTO line")
-	PrintText("GOSUB line")
-	PrintText("RETURN")
-	PrintText("FOR variable = start TO limit [STEP value]")
-	PrintText("NEXT [variable]")
-	PrintText("ON expression GOTO line,...")
-	PrintText("ON expression GOSUB line,...")
-	PrintText("DATA value,...")
-	PrintText("READ variable,...")
-	PrintText("RESTORE")
-	PrintText("RANDOMIZE [expression]")
-	PrintText("REM comment")
-	PrintText("END")
-
-	PrintText("")
-	PrintText("ERROR HANDLING")
-	PrintText("ON ERROR GOTO line")
-	PrintText("ON ERROR GOTO 0")
-	PrintText("RESUME")
-	PrintText("RESUME NEXT")
-	PrintText("ERR     Error code")
-	PrintText("ERL     Error line number")
-
-	PrintText("")
-	PrintText("NUMERIC FUNCTIONS")
-	PrintText("ABS  INT  SGN  SQR")
-	PrintText("SIN  COS  TAN")
-	PrintText("LOG  EXP  RND")
-	PrintText("LEN  VAL  ASC  INSTR")
-
-	PrintText("")
-	PrintText("STRING FUNCTIONS")
-	PrintText("LEFT$  RIGHT$  MID$")
-	PrintText("STR$   CHR$    SPACE$")
-	PrintText("STRING$  UCASE$  LCASE$")
-	PrintText("LTRIM$  RTRIM$  TRIM$")
-
-	PrintText("")
-	PrintText("PRINT FORMATTING")
-	PrintText("TAB(n)  Move to column n")
-	PrintText("SPC(n)  Print n spaces")
-	PrintText(";       Separate output items")
-	PrintText(",       Advance to next print zone")
-
-	PrintText("")
-	PrintText("END OF HELP")
-	PrintText("==============================")
-
+'
+'	PrintText("BASIC-58 :: HELP")
+'	PrintText("==============================")
+'
+'	PrintText("")
+'	PrintText("DIRECT COMMANDS")
+'	PrintText("HELP              Show this help")
+'	PrintText("LIST              List program")
+'	PrintText("RUN               Run program")
+'	PrintText("NEW               Create NEW BASIC program")
+'	PrintText("SAVE [filename]   Save program")
+'	PrintText("LOAD [filename]   Load program")
+'	PrintText("CLS               Clear output")
+'	PrintText("PRINT expression  Print immediately")
+'
+'	PrintText("")
+'	PrintText("PROGRAM STATEMENTS")
+'	PrintText("LET variable = expression")
+'	PrintText("INPUT [prompt;] variables")
+'	PrintText("PRINT expressions")
+'	PrintText("IF condition THEN line")
+'	PrintText("GOTO line")
+'	PrintText("GOSUB line")
+'	PrintText("RETURN")
+'	PrintText("FOR variable = start TO limit [STEP value]")
+'	PrintText("NEXT [variable]")
+'	PrintText("ON expression GOTO line,...")
+'	PrintText("ON expression GOSUB line,...")
+'	PrintText("DATA value,...")
+'	PrintText("READ variable,...")
+'	PrintText("RESTORE")
+'	PrintText("RANDOMIZE [expression]")
+'	PrintText("REM comment")
+'	PrintText("END")
+'
+'	PrintText("")
+'	PrintText("ERROR HANDLING")
+'	PrintText("ON ERROR GOTO line")
+'	PrintText("ON ERROR GOTO 0")
+'	PrintText("RESUME")
+'	PrintText("RESUME NEXT")
+'	PrintText("ERR     Error code")
+'	PrintText("ERL     Error line number")
+'
+'	PrintText("")
+'	PrintText("NUMERIC FUNCTIONS")
+'	PrintText("ABS  INT  SGN  SQR")
+'	PrintText("SIN  COS  TAN")
+'	PrintText("LOG  EXP  RND")
+'	PrintText("LEN  VAL  ASC  INSTR")
+'
+'	PrintText("")
+'	PrintText("STRING FUNCTIONS")
+'	PrintText("LEFT$  RIGHT$  MID$")
+'	PrintText("STR$   CHR$    SPACE$")
+'	PrintText("STRING$  UCASE$  LCASE$")
+'	PrintText("LTRIM$  RTRIM$  TRIM$")
+'
+'	PrintText("")
+'	PrintText("PRINT FORMATTING")
+'	PrintText("TAB(n)  Move to column n")
+'	PrintText("SPC(n)  Print n spaces")
+'	PrintText(";       Separate output items")
+'	PrintText(",       Advance to next print zone")
+'
+'	PrintText("")
+'	PrintText("END OF HELP")
+'	PrintText("==============================")
 End Sub
 
-Private Sub ScrollTextToBottom As ResumableSub
+Private Sub ScrollTextToBottom(Target As B4XView) As ResumableSub
 	Sleep(50)
 
-	Dim NativeTextArea As JavaObject = txtScreen
+	Dim NativeTextArea As JavaObject = Target
 	NativeTextArea.RunMethod("setScrollTop", Array(100000.0))
 
 	Return True
+End Sub
+
+
+'Handle click of a toolbar label
+'Label tag is an array object with 3 entries: Layoutmodule (map), eventname (string), tag (string)
+'The label tag is assigned to an array object from which the entry with index 2 is assigned to string.
+Private Sub Toolbar_Click (lbl As B4XView)
+	Dim o() As Object = lbl.Tag
+	Dim tag As String = o(2)
+	'Log($"[Toolbar_Click] tag=${tag}, text=${lbl.Text}"$)
+	Select tag.ToLowerCase
+		Case "load"
+			Load
+		Case "save"
+			Save
+		Case "run"
+			RunProgram
+	End Select
+	'B4XPages.SetTitle(Me, tag)
+End Sub
+
+Private Sub Load
+	Dim Filename As String
+	Dim FileChoose As FileChooser
+	FileChoose.Initialize
+	FileChoose.InitialDirectory = File.DirApp
+	FileChoose.SetExtensionFilter("BAS", Array As String("*.bas"))
+	FileChoose.Title = "Load Program"
+	Filename = FileChoose.ShowOpen(B4XPages.GetNativeParent(Me))
+	If Filename.Length = 0 Then 
+		Return
+	End If
+	Try
+		CurrentFileName = GetFileName(Filename).ToUpperCase
+		CurrentFilePath = GetFilePath(Filename)
+		lblFile.Text = CurrentFileName
+		'Log($"[Load] path=${CurrentFilePath}, file=${CurrentFileName}"$)
+		LoadProgram(CurrentFileName)
+		ProgramModified = False
+		LoadingProgram = True
+		UpdatePageTitle
+	Catch
+		Log("[Load][E] Failed - " & LastException.Message)
+	End Try
+	Return
+End Sub
+
+'# Save Content TextArea To a TextFile
+' Dim Str As String = "Hello World"
+' StringToTextFile(MainForm, Str)
+Private Sub Save
+	Dim Filename As String
+	Dim FileChoose As FileChooser
+
+	FileChoose.Initialize
+	FileChoose.InitialDirectory = CurrentFilePath
+	FileChoose.InitialFileName = CurrentFileName
+	FileChoose.Title = "Save Program"
+	Filename = FileChoose.ShowSave(B4XPages.GetNativeParent(Me))
+	If Filename.Length = 0 Then Return
+	Try
+		CurrentFileName = GetFileName(Filename).ToUpperCase
+		CurrentFilePath = GetFilePath(Filename)
+		'Log("[Save] Selected: " & Filename)
+		'Log("[Save] Directory: " & CurrentFilePath)
+		'Log("[Save] Filename: " & CurrentFileName)
+		
+		If SaveProgram(CurrentFileName) Then
+			lblFile.Text = CurrentFileName
+			ProgramModified = False
+			UpdatePageTitle			
+		End If
+	Catch
+		Log($"[Save][E] Failed - ${LastException.Message}"$)
+	End Try
+End Sub
+           
+' Returns the filename from a fullpath
+Sub GetFileName(path As String) As String
+	' Define the JavaObject
+	Dim fileO As JavaObject
+	' Get the fileio class
+	fileO.InitializeNewInstance("java.io.File", Array As Object(path))
+	' Getthe filename
+	Return fileO.RunMethod("getName", Null)
+End Sub
+
+' Returns the filepath from a fullpath
+Sub GetFilePath(path As String) As String
+	' Define the JavaObject
+	Dim fileO As JavaObject
+	' Get the fileio class
+	fileO.InitializeNewInstance("java.io.File", Array As Object(path))
+	' Getthe filename and path
+	Dim n As String = fileO.RunMethod("getName", Null)
+	Dim p As String = fileO.RunMethod("getPath", Null)
+	p = p.Replace(n, "")
+	Return p
+End Sub
+
+Private Sub taEditor_TextChanged (Old As String, New As String)
+	If UpdatingEditor Then Return
+
+	If LoadingProgram = False Then
+		ProgramModified = True
+		UpdatePageTitle
+	End If
+
+	Dim UpperText As String = New.ToUpperCase
+
+	If New <> UpperText Then
+		Dim TextArea As JavaObject = taEditor
+		Dim CursorPosition As Int = TextArea.RunMethod("getCaretPosition", Null)
+
+		UpdatingEditor = True
+		taEditor.Text = UpperText
+		TextArea.RunMethod("positionCaret", Array(CursorPosition))
+		UpdatingEditor = False
+	End If
+End Sub
+
+Private Sub UpdateProgramLines
+	ProgramLines.Clear
+
+	Dim EditorLines() As String = Regex.Split(CRLF, taEditor.Text)
+
+	For Each EditorLine As String In EditorLines
+		EditorLine = EditorLine.Trim
+
+		If EditorLine = "" Then Continue
+
+		Dim SpacePos As Int = EditorLine.IndexOf(" ")
+
+		If SpacePos <= 0 Then Continue
+
+		Dim NumberText As String = EditorLine.SubString2(0, SpacePos)
+		Dim LineCode As String = EditorLine.SubString(SpacePos + 1).Trim
+
+		If IsNumber(NumberText) And LineCode <> "" Then
+			Dim LineNumber As Int = NumberText
+			ProgramLines.Put(LineNumber, LineCode)
+		End If
+	Next
+End Sub
+
+Private Sub UpdatePageTitle
+	Dim PageTitle As String = $"${VERSION} - ${CurrentFileName}"$
+
+	If ProgramModified Then
+		PageTitle = PageTitle & " *"
+	End If
+
+	B4XPages.SetTitle(Me, PageTitle)
+End Sub
+
+Private Sub FormatNumber(Value As Double) As String
+	Dim Result As String = NumberFormat2(Value, 1, 0, 6, False)
+
+	Do While Result.Contains(".") And Result.EndsWith("0")
+		Result = Result.SubString2(0, Result.Length - 1)
+	Loop
+
+	If Result.EndsWith(".") Then
+		Result = Result.SubString2(0, Result.Length - 1)
+	End If
+
+	Return Result
 End Sub
