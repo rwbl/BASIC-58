@@ -9,10 +9,12 @@ Library3=jcore
 Library4=jfx
 Library5=designerutils
 Module1=|relative|..\B4XMainPage
-Module2=|relative|..\DesignerToolbar
+Module2=|relative|..\Basic58Interpreter
+Module3=|relative|..\DesignerToolbar
+Module4=|relative|..\Utils
 NumberOfFiles=1
 NumberOfLibraries=5
-NumberOfModules=2
+NumberOfModules=4
 Version=10.7
 @EndOfDesignText@
 #Region Project Attributes 
