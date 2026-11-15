@@ -1,4 +1,4 @@
-# CHANGELOG
+# CHANGELOG BASIC-58
 
 ## v0.1.0 (Build 20261114)
 **Focus: First working version to test**

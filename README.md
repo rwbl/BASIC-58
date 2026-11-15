@@ -1,4 +1,4 @@
-# expBASIC
+# BASIC-58
 
 **Version 0.1.0**
 
@@ -6,7 +6,7 @@ An experimental BASIC interpreter written in BASIC (B4X), inspired by retro comp
 
 ## About the project
 
-expBASIC is a personal hobby project inspired by retro computing and projects such as [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu).
+BASIC-58 is a personal hobby project inspired by retro computing and projects such as [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu).
 
 The project has two main goals:
 
@@ -15,16 +15,16 @@ The project has two main goals:
 
 I also simply enjoy retro computing and the atmosphere of classic home computers, where you could switch on a machine, get a BASIC prompt and start programming.
 
-expBASIC is not intended to be a complete implementation of a historical BASIC dialect. It is an evolving learning project, developed step by step.
+BASIC-58 is not intended to be a complete implementation of a historical BASIC dialect. It is an evolving learning project, developed step by step.
 
 The idea is simple: keep BASIC approachable, make it fun to experiment with, and perhaps inspire someone else to discover programming.
 
-The ultimate goal is to make expBASIC a small, reliable, educational BASIC interpreter with a nostalgic terminal experience. 
+The ultimate goal is to make BASIC-58 a small, reliable, educational BASIC interpreter with a nostalgic terminal experience. 
 ... and not a huge language implementation.
 
 ## A little bit of retro irony
 
-There is something rather fitting about this project: **expBASIC is itself written in BASIC.**
+There is something rather fitting about this project: **BASIC-58 is itself written in BASIC.**
 
 The interpreter is developed using [B4J](https://www.b4x.com/b4j.html), a modern BASIC-based development environment.
 
@@ -34,7 +34,7 @@ So here we have a BASIC interpreter, written in BASIC, bringing BASIC back to li
 
 ## Features
 
-expBASIC currently supports:
+BASIC-58 currently supports:
 
 - Interactive BASIC command prompt
 - Numbered program lines
@@ -60,8 +60,8 @@ expBASIC currently supports:
 --- 
 
 <p align="center">
-  <img src="images/expBASIC-1.png"
-       alt="expBASIC running the Number Guessing Game"
+  <img src="images/BASIC-58-1.png"
+       alt="BASIC-58 running the Number Guessing Game"
        width="700">
 </p>
 
@@ -75,7 +75,7 @@ expBASIC currently supports:
 
 ## Getting started
 
-Open the expBASIC project in B4J and run it.
+Open the BASIC-58 project in B4J and run it.
 
 The interpreter provides an interactive command prompt.
 
@@ -84,7 +84,7 @@ You can enter commands directly or create a numbered BASIC program.
 For example:
 
 ```basic
-10 PRINT "HELLO expBASIC"
+10 PRINT "HELLO BASIC-58"
 20 PRINT 10 + 20
 30 END
 ```
@@ -100,7 +100,7 @@ Expected output:
 ```text
 RUNNING...
 
-HELLO expBASIC
+HELLO BASIC-58
 30
 
 READY.
@@ -164,7 +164,7 @@ Program files are stored in the application's directory.
 
 ### Variables
 
-expBASIC supports numeric and string variables.
+BASIC-58 supports numeric and string variables.
 
 ```basic
 10 LET A = 123
@@ -311,16 +311,16 @@ Supported error codes:
 
 # Examples
 
-The following examples are based on the expBASIC regression tests.
+The following examples are based on the BASIC-58 regression tests.
 
 They are intended to demonstrate the currently implemented language features and provide small programs to experiment with.
 
-## 1. Hello, expBASIC!
+## 1. Hello, BASIC-58!
 
 A first BASIC program.
 
 ```basic
-10 PRINT "HELLO expBASIC"
+10 PRINT "HELLO BASIC-58"
 20 PRINT "WELCOME TO BASIC"
 30 END
 ```
@@ -328,7 +328,7 @@ A first BASIC program.
 Expected output:
 
 ```text
-HELLO expBASIC
+HELLO BASIC-58
 WELCOME TO BASIC
 ```
 
@@ -400,7 +400,7 @@ ROB!
 30 PRINT "INTEGER: "; INT(12.8)
 40 PRINT "SIGN: "; SGN(-10)
 50 PRINT "VALUE: "; VAL("123")
-60 PRINT "LENGTH: "; LEN("expBASIC")
+60 PRINT "LENGTH: "; LEN("BASIC-58")
 70 END
 ```
 
@@ -418,7 +418,7 @@ LENGTH: 9
 ## 6. String functions
 
 ```basic
-10 LET NAME$ = "expBASIC"
+10 LET NAME$ = "BASIC-58"
 20 PRINT LEFT$(NAME$, 4)
 30 PRINT RIGHT$(NAME$, 4)
 40 PRINT MID$(NAME$, 3, 4)
@@ -853,7 +853,7 @@ READY.
 
 ## Regression testing
 
-expBASIC has been tested with a collection of regression programs covering the implemented language features.
+BASIC-58 has been tested with a collection of regression programs covering the implemented language features.
 
 The tests include:
 
@@ -873,7 +873,7 @@ All eleven regression test areas have passed.
 
 ## Project status
 
-expBASIC is an evolving hobby and learning project.
+BASIC-58 is an evolving hobby and learning project.
 
 The interpreter is being developed incrementally, with new features tested before moving on to the next step.
 
@@ -899,7 +899,7 @@ See the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
-expBASIC is an experimental hobby project developed for educational and learning purposes.
+BASIC-58 is an experimental hobby project developed for educational and learning purposes.
 
 - The software is provided "AS IS", without warranty of any kind.
 - It is not intended for professional, commercial, safety-critical or industrial control applications.
