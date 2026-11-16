@@ -80,7 +80,7 @@ BASIC-58 is itself written in BASIC — specifically, B4J.
 <p align="center">
   <img src="images/BASIC-58-1.png"
        alt="BASIC-58 running the temperature conversion"
-       width="700">
+       width="400">
 </p>
 
 ---
