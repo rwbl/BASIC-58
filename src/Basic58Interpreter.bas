@@ -15,9 +15,13 @@ Version=10.7
 ' ================================================================
 
 Private Sub Class_Globals
+	' Version
+	Private VERSION As String = "v20261116"	'ignore
+	
 	' Events	
 	Private mCallback As Object
 	Private mEventName As String
+
 	' BASIC interpreter
 	Private MAX_VAR_LENGTH As Int = 8
 
@@ -47,7 +51,8 @@ Private Sub Class_Globals
 	' DATA / READ handling
 	Private DataItems As List
 	Private DataPosition As Int
-
+	Private DataErrorLine As Int
+	
 	' Error handling
 	Private ErrorHandlerLine As Int
 	Private ErrorHandlerEnabled As Boolean
@@ -58,9 +63,13 @@ Private Sub Class_Globals
 	Private ErrorLineNumber As Int
 	Private ExprErrorCode As Int
 	Private ReadErrorMessage As String
+	Private ProgramErrorMessage As String
 End Sub
 
 Public Sub Initialize(Callback As Object, EventName As String)
+	Log(VERSION)
+	
+	' Callback and events.
 	mCallback = Callback
 	mEventName = EventName
 
@@ -96,27 +105,53 @@ End Sub
 
 'Parse numbered BASIC lines into ProgramLines.
 Public Sub LoadProgram(Source As String)
-    ProgramLines.Clear
 
-    Dim EditorLines() As String = Regex.Split(CRLF, Source)
+	ProgramLines.Clear
 
-    For Each EditorLine As String In EditorLines
-        EditorLine = EditorLine.Trim
+	Dim EditorLines() As String = Regex.Split("\r\n|\n|\r", Source)
 
-        If EditorLine = "" Then Continue
+	Dim FileLineNumber As Int = 0
 
-        Dim SpacePos As Int = EditorLine.IndexOf(" ")
+	For Each EditorLine As String In EditorLines
 
-        If SpacePos <= 0 Then Continue
+		FileLineNumber = FileLineNumber + 1
+		EditorLine = EditorLine.Trim
 
-        Dim NumberText As String = EditorLine.SubString2(0, SpacePos)
-        Dim LineCode As String = EditorLine.SubString(SpacePos + 1).Trim
+		'Ignore empty lines.
+		If EditorLine = "" Then Continue
 
-        If IsNumber(NumberText) And LineCode <> "" Then
-            Dim LineNumber As Int = NumberText
-            ProgramLines.Put(LineNumber, LineCode)
-        End If
-    Next
+		'Find the separator between line number and statement.
+		Dim SpacePos As Int = EditorLine.IndexOf(" ")
+
+		If SpacePos <= 0 Then
+			RaiseOutput("WARNING: INVALID LINE AT FILE LINE " & FileLineNumber)
+			Continue
+		End If
+
+		Dim NumberText As String = EditorLine.SubString2(0, SpacePos)
+		Dim LineCode As String = EditorLine.SubString(SpacePos + 1).Trim
+
+		'Validate line number.
+		If IsNumber(NumberText) = False Or LineCode = "" Then
+			RaiseOutput("WARNING: INVALID LINE AT FILE LINE " & FileLineNumber)
+			Continue
+		End If
+
+		Dim NumberValue As Double = NumberText
+
+		If NumberValue < 0 Or NumberValue <> Floor(NumberValue) Then
+			RaiseOutput("WARNING: INVALID LINE AT FILE LINE " & FileLineNumber)
+			Continue
+		End If
+
+		Dim LineNumber As Int = NumberValue
+
+		'Store program line.
+		'Duplicate line numbers replace previous entries.
+		ProgramLines.Put(LineNumber, LineCode)
+
+	Next
+
 End Sub
 
 ' Start BASIC program execution.
@@ -144,7 +179,11 @@ Public Sub RunProgram
 
 	RunLines.Sort(True)
 	
-	CollectData
+	If CollectData = False Then
+		RaiseOutput("?SYNTAX ERROR IN LINE " & DataErrorLine)
+		RaiseReady
+		Return
+	End If
 
 	RunPosition = 0
 
@@ -178,8 +217,17 @@ Public Sub ExecuteCommand(Command As String)
     If SpacePos > 0 Then
         Dim FirstToken As String = Command.SubString2(0, SpacePos)
 
-        If IsNumber(FirstToken) Then
-            Dim LineNumber As Int = FirstToken
+		If IsNumber(FirstToken) Then
+
+			Dim LineValue As Double = FirstToken
+
+			If LineValue < 0 Or LineValue <> Floor(LineValue) Then
+				RaiseOutput("?INVALID LINE NUMBER")
+				Return
+			End If
+
+			Dim LineNumber As Int = LineValue
+
             Dim LineCode As String = Command.SubString(SpacePos + 1).Trim
 
             If LineCode = "" Then
@@ -226,8 +274,7 @@ Public Sub SubmitInput(Command As String)
 	If WaitingForInput Then
 
 		'Allow the user to abort a running program.
-		'Allow the user to abort a running program.
-		If Command.ToUpperCase = "BREAK" Then
+		If Command.trim.ToUpperCase = "BREAK" Then
 			WaitingForInput = False
 			RunPosition = RunLines.Size
 			InputVariables.Clear
@@ -323,40 +370,46 @@ Private Sub ExecuteLet(LineCode As String) As Boolean
 	ExprError = False
 	ExprErrorCode = 0
 
-	Dim EqualPos As Int = LineCode.IndexOf("=")
+	Dim Statement As String = LineCode.Trim
 
-	If EqualPos < 0 Then Return False
+	If Statement.Length < 4 Then Return False
 
-	Dim VariableName As String = LineCode.SubString2(4, EqualPos).Trim.ToUpperCase
-	Dim Expression As String = LineCode.SubString(EqualPos + 1).Trim
+	If Statement.SubString2(0, 3).ToUpperCase <> "LET" Then Return False
+
+	'Extract the assignment after LET.
+	Dim Assignment As String = Statement.SubString(3).Trim
+
+	Dim EqualPos As Int = Assignment.IndexOf("=")
+
+	If EqualPos <= 0 Then Return False
+
+	Dim VariableName As String = Assignment.SubString2(0, EqualPos).Trim.ToUpperCase
+	Dim Expression As String = Assignment.SubString(EqualPos + 1).Trim
 
 	If Expression = "" Then Return False
 
 	If IsValidVariable(VariableName) = False Then Return False
-	
+
 	'String variable.
 	If VariableName.EndsWith("$") Then
-		ExprErrorCode = 0
 		Dim StringValue As String = EvaluateStringExpression(Expression)
 
 		If ExprError Then
 			If ExprErrorCode = 0 Then ExprErrorCode = 20
 			Return False
 		End If
-		
+
 		Variables.Put(VariableName, StringValue)
 		Return True
 	End If
 
-	' Log("LET: Variable=" & VariableName & ", Expression=" & Expression)
-
 	'Numeric expression.
 	Dim Result As Double = EvaluateNumericExpression(Expression)
+
 	If ExprError Then Return False
 
-	' Log("LET: " & VariableName & " = " & NumberFormat(Result, 1, 6))
 	Variables.Put(VariableName, NumberFormat2(Result, 1, 0, 6, False))
-	
+
 	Return True
 End Sub
 
@@ -518,10 +571,11 @@ Private Sub ExecuteRestore(LineCode As String) As Boolean
 
 End Sub
 
-Private Sub CollectData
+Private Sub CollectData As Boolean
 
 	DataItems.Initialize
 	DataPosition = 0
+	DataErrorLine = 0
 
 	For Each LineNumber As Int In RunLines
 
@@ -547,6 +601,12 @@ Private Sub CollectData
 					CurrentItem.Append(CurrentChar)
 
 				Else If CurrentChar = "," And InQuotes = False Then
+
+					If CurrentItem.ToString.Trim = "" Then
+						DataErrorLine = LineNumber
+						Return False
+					End If
+
 					DataItems.Add(CurrentItem.ToString.Trim)
 					CurrentItem.Initialize
 
@@ -556,19 +616,32 @@ Private Sub CollectData
 
 			Next
 
-			If CurrentItem.Length > 0 Then
-				DataItems.Add(CurrentItem.ToString.Trim)
+			'Check for an unclosed quoted string.
+			If InQuotes Then
+				DataErrorLine = LineNumber
+				Return False
 			End If
+
+			'Check the final DATA item.
+			If CurrentItem.ToString.Trim = "" Then
+				DataErrorLine = LineNumber
+				Return False
+			End If
+
+			DataItems.Add(CurrentItem.ToString.Trim)
 
 		End If
 
 	Next
+
 '	PrintText("DATA ITEMS: " & DataItems.Size)
 '	For Each Item As String In DataItems
 '		PrintText("[" & Item & "]")
 '	Next
-End Sub
 
+	Return True
+
+End Sub
 
 Private Sub ContinueProgram
 
@@ -640,7 +713,9 @@ Private Sub ContinueProgram
 			Case UpperLine.StartsWith("ON ")
 				If ExecuteOn(LineCode) = False Then
 
-					If ExprError Then
+					If ProgramErrorMessage <> "" Then
+						If HandleProgramError(ProgramErrorMessage) Then Continue
+					Else If ExprError Then
 						If ExprErrorCode = 11 Then
 							If HandleProgramError("?DIVISION BY ZERO IN LINE " & LineNumber) Then Continue
 						Else
@@ -661,7 +736,14 @@ Private Sub ContinueProgram
 					Exit
 				End If
 
-				Dim TargetLine As Int = TargetText
+				Dim TargetValue As Double = TargetText
+
+				If TargetValue < 0 Or TargetValue <> Floor(TargetValue) Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
+				Dim TargetLine As Int = TargetValue
 
 				GosubStack.Add(RunPosition)
 
@@ -680,15 +762,44 @@ Private Sub ContinueProgram
 					Exit
 				End If
 
-				Dim TargetLine As Int = TargetText
+				Dim TargetValue As Double = TargetText
+
+				If TargetValue < 0 Or TargetValue <> Floor(TargetValue) Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
+				Dim TargetLine As Int = TargetValue
 
 				If JumpToLine(TargetLine) = False Then
 					If HandleProgramError("?UNDEFINED LINE " & TargetLine) Then Continue
 					Exit
 				End If
+				
+				CleanupForStack(RunPosition)
 
 			Case UpperLine.StartsWith("IF ")
-				Dim ThenPos As Int = UpperLine.IndexOf("THEN ")
+				Dim ThenPos As Int = -1
+				Dim InString As Boolean = False
+
+				'Find THEN outside quoted strings.
+				For i = 0 To UpperLine.Length - 5
+
+					Dim c As String = UpperLine.SubString2(i, i + 1)
+
+					If c = Chr(34) Then
+						InString = Not(InString)
+						Continue
+					End If
+
+					If InString Then Continue
+
+					If UpperLine.SubString2(i, i + 5) = "THEN " Then
+						ThenPos = i
+						Exit
+					End If
+
+				Next
 
 				If ThenPos < 0 Then
 					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
@@ -699,6 +810,13 @@ Private Sub ContinueProgram
 				Dim TargetText As String = LineCode.SubString(ThenPos + 4).Trim
 
 				If IsNumber(TargetText) = False Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
+				Dim TargetValue As Double = TargetText
+
+				If TargetValue < 0 Or TargetValue <> Floor(TargetValue) Then
 					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
 					Exit
 				End If
@@ -715,12 +833,14 @@ Private Sub ContinueProgram
 				End If
 
 				If ConditionResult Then
-					Dim TargetLine As Int = TargetText
+					Dim TargetLine As Int = TargetValue
 
 					If JumpToLine(TargetLine) = False Then
 						If HandleProgramError("?UNDEFINED LINE " & TargetLine) Then Continue
 						Exit
 					End If
+
+					CleanupForStack(RunPosition)
 				End If
 				
 			Case UpperLine = "PRINT" Or UpperLine.StartsWith("PRINT ")
@@ -1277,8 +1397,13 @@ Private Sub ParseFactor As Double
 				ExprPos = StringArgumentEnd + 1
 
 				'Evaluate the string expression.
-				Dim StringFunctionValue As String = _
-					EvaluateStringExpression(StringExpressionText)
+				Dim SavedExprText As String = ExprText
+				Dim SavedExprPos As Int = ExprPos
+
+				Dim StringFunctionValue As String = EvaluateStringExpression(StringExpressionText)
+
+				ExprText = SavedExprText
+				ExprPos = SavedExprPos
 
 				If ExprError Then Return 0
 
@@ -1566,11 +1691,15 @@ Private Sub ExecuteFor(LineCode As String, BodyPosition As Int) As Boolean
 
 	Dim LoopData As Map
 	LoopData.Initialize
+	Dim MatchingNextPosition As Int = FindMatchingNextPosition(VariableName)
+
+	If MatchingNextPosition < 0 Then Return False
+
 	LoopData.Put("Variable", VariableName)
 	LoopData.Put("Limit", LimitValue)
 	LoopData.Put("Step", StepValue)
 	LoopData.Put("BodyPosition", BodyPosition)
-
+	LoopData.Put("NextPosition", MatchingNextPosition)
 	ForStack.Add(LoopData)
 
 	Return True
@@ -1647,48 +1776,95 @@ Private Sub FindNextPosition(VariableName As String) As Int
 
 End Sub
 
-Private Sub ExecuteOn(LineCode As String) As Boolean
+Private Sub CleanupForStack(TargetPosition As Int)
 
+	For i = ForStack.Size - 1 To 0 Step -1
+
+		Dim LoopData As Map = ForStack.Get(i)
+		Dim NextPosition As Int = LoopData.Get("NextPosition")
+
+		If TargetPosition > NextPosition Then
+			ForStack.RemoveAt(i)
+		End If
+
+	Next
+
+End Sub
+
+Private Sub ExecuteOn(LineCode As String) As Boolean
+	ProgramErrorMessage = ""
 	ExprError = False
 	ExprErrorCode = 0
 
 	Dim UpperLine As String = LineCode.ToUpperCase.Trim
 
-	Dim GotoPos As Int = UpperLine.IndexOf(" GOTO ")
-	Dim GosubPos As Int = UpperLine.IndexOf(" GOSUB ")
-
+	'Find GOTO or GOSUB outside quoted strings.
+	Dim OperatorPos As Int = -1
+	Dim OperatorLength As Int = 0
 	Dim IsGosub As Boolean = False
-	Dim OperatorPos As Int
-	Dim OperatorLength As Int
+	Dim InString As Boolean = False
 
-	If GotoPos >= 0 Then
-		OperatorPos = GotoPos
-		OperatorLength = 6
-	Else If GosubPos >= 0 Then
-		OperatorPos = GosubPos
-		OperatorLength = 7
-		IsGosub = True
-	Else
-		Return False
-	End If
+	For i = 0 To UpperLine.Length - 1
+
+		Dim c As String = UpperLine.SubString2(i, i + 1)
+
+		If c = Chr(34) Then
+			InString = Not(InString)
+			Continue
+		End If
+
+		If InString Then Continue
+
+		If i <= UpperLine.Length - 6 Then
+			If UpperLine.SubString2(i, i + 6) = " GOTO " Then
+				OperatorPos = i
+				OperatorLength = 6
+				Exit
+			End If
+		End If
+
+		If i <= UpperLine.Length - 7 Then
+			If UpperLine.SubString2(i, i + 7) = " GOSUB " Then
+				OperatorPos = i
+				OperatorLength = 7
+				IsGosub = True
+				Exit
+			End If
+		End If
+
+	Next
+
+	If OperatorPos < 0 Then Return False
 
 	'Get selector expression.
 	Dim Expression As String = LineCode.SubString2(3, OperatorPos).Trim
+
+	If Expression = "" Then Return False
 
 	Dim Selector As Double = EvaluateNumericExpression(Expression)
 
 	If ExprError Then Return False
 
 	'Get target line list.
-	Dim TargetList As String = LineCode.SubString(OperatorPos + OperatorLength)
+	Dim TargetList As String = LineCode.SubString(OperatorPos + OperatorLength).Trim
+
+	If TargetList = "" Then Return False
+
 	Dim Targets() As String = Regex.Split(",", TargetList)
 
 	If Targets.Length = 0 Then Return False
 
 	'Validate all target line numbers.
 	For Each Target As String In Targets
+
 		Target = Target.Trim
-		If IsNumber(Target) = False Then Return False
+
+		If Target = "" Or IsNumber(Target) = False Then Return False
+
+		Dim TargetValue As Double = Target
+
+		If TargetValue < 0 Or TargetValue <> Floor(TargetValue) Then Return False
+
 	Next
 
 	'BASIC ON selection is 1-based.
@@ -1696,7 +1872,7 @@ Private Sub ExecuteOn(LineCode As String) As Boolean
 
 	If Choice < 1 Or Choice > Targets.Length Then Return True
 
-	Dim TargetLine As Int = Targets(Choice - 1)
+	Dim TargetLine As Int = Targets(Choice - 1).Trim
 
 	If IsGosub Then
 		'Remember the position of the next BASIC line.
@@ -1704,14 +1880,16 @@ Private Sub ExecuteOn(LineCode As String) As Boolean
 	End If
 
 	If JumpToLine(TargetLine) = False Then
+
 		If IsGosub Then
 			GosubStack.RemoveAt(GosubStack.Size - 1)
 		End If
+
+		ProgramErrorMessage = "?UNDEFINED LINE " & TargetLine
 		Return False
 	End If
 
 	Return True
-
 End Sub
 
 Private Sub ExecuteInput(LineCode As String) As Boolean
@@ -2349,16 +2527,19 @@ Private Sub HandleProgramError(Message As String) As Boolean
 
 End Sub
 
+
 Private Sub ExecuteOnError(LineCode As String) As Boolean
 	Dim UpperLine As String = LineCode.ToUpperCase.Trim
-
 	If UpperLine.StartsWith("ON ERROR GOTO ") = False Then Return False
 
 	Dim TargetText As String = LineCode.SubString(14).Trim
-
 	If IsNumber(TargetText) = False Then Return False
 
-	Dim TargetLine As Int = TargetText
+	Dim TargetValue As Double = TargetText
+
+	If TargetValue < 0 Or TargetValue <> Floor(TargetValue) Then Return False
+
+	Dim TargetLine As Int = TargetValue
 
 	If TargetLine = 0 Then
 		ErrorHandlerEnabled = False
@@ -2423,6 +2604,39 @@ Private Sub FindRunPosition(TargetLine As Int) As Int
 	Next
 
 	Return -1
+End Sub
+
+Private Sub FindMatchingNextPosition(VariableName As String) As Int
+
+	Dim Nesting As Int = 0
+
+	For i = RunPosition To RunLines.Size - 1
+
+		Dim LineNumber As Int = RunLines.Get(i)
+		Dim LineCode As String = ProgramLines.Get(LineNumber)
+		Dim UpperLine As String = LineCode.ToUpperCase.Trim
+
+		If UpperLine.StartsWith("FOR ") Then
+			Nesting = Nesting + 1
+
+		Else If UpperLine = "NEXT" Or UpperLine.StartsWith("NEXT ") Then
+
+			If Nesting = 0 Then
+				Dim NextVariable As String = UpperLine.SubString(4).Trim
+
+				If NextVariable = "" Or NextVariable = VariableName Then
+					Return i
+				End If
+			Else
+				Nesting = Nesting - 1
+			End If
+
+		End If
+
+	Next
+
+	Return -1
+
 End Sub
 
 Private Sub JumpToLine(TargetLine As Int) As Boolean

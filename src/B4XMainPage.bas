@@ -11,6 +11,7 @@ Version=9.85
 ' Date:			See Class_Globals VERSION
 ' Author:		Robert W.B. Linn (c) 2026 MIT License
 ' Description:	This page is used to develop & test BASIC-58.
+' Shortcuts:	Ctrl+N = New program, Ctrl+O = Open / Load, Ctrl+S = Save, F5 = Run
 ' DependsOn:	CSSUtils.
 '				Interpreter owns the Basic program, variables, execution state And all Basic commands.
 '				B4XMainPage owns the editor, terminal, command field, File dialogs And application state.
@@ -24,11 +25,13 @@ Version=9.85
 ' Ctrl + click to sync files: ide://run?file=%WINDIR%\System32\Robocopy.exe&args=..\..\Shared+Files&args=..\Files&FilesSync=True
 #End Region
 
-#Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
+' #Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
 
 Sub Class_Globals
 	' A tiny BASIC interpreter
-	Private VERSION As String = "BASIC-58"
+	Private APPNAME As String = "BASIC-58"
+	Private APPVERSION As String = "v1.0.0 (Build 20261116)"
+	Private APPCOPYRIGHT As String = "Copyright (c) 2026 Robert W.B. Linn - MIT Licence"
 
 	' Core
 	Private fx As JFX
@@ -82,8 +85,13 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	ProgramModified = False
 	
 	' UI
-	B4XPages.GetNativeParent(Me).Resizable = False
+	B4XPages.GetNativeParent(Me).Icon = xui.LoadBitmap(File.DirAssets, "Icon.png")
+	' B4XPages.GetNativeParent(Me).Resizable = False
+	InitializeKeyboardShortcuts
+	' Set textareas editable state
 	taEditor.As(TextArea).Editable = True
+	taOutput.As(TextArea).Editable = False
+	' Labels
 	lblFile.Text = CurrentFileName
 	lblStatus.Text = "READY"
 	UpdatePageTitle
@@ -98,8 +106,7 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	
 	InitializeUIStyle
 	
-	' Welcome Message
-	InitializeScreen
+	ShowWelcomMessage
 End Sub
 
 ' ----------------------------------------------------------------
@@ -170,16 +177,48 @@ Private Sub InitializeUIStyle
 
 End Sub
 
-Private Sub InitializeScreen	'ignore
+' ----------------------------------------------------------------
+' Keyboard shortcuts
+' ----------------------------------------------------------------
 
-	PrintText(taOutput, "**** BASIC-58 ****")
-	PrintText(taOutput, "BASIC INTERPRETER")
-	PrintText(taOutput, "TYPE HELP FOR COMMANDS")
-	PrintText(taOutput, "")
-	PrintText(taOutput, "READY.")
-
-	lblStatus.Text = "READY"
+#Region ShortCuts
+Private Sub InitializeKeyboardShortcuts
+	Dim R As Reflector
+	R.Target = B4XPages.GetNativeParent(Me).RootPane
+	R.AddEventFilter("MainKeyPressed", "javafx.scene.input.KeyEvent.KEY_PRESSED")
 End Sub
+
+Private Sub MainKeyPressed_Filter(E As Event)
+	Dim R As Reflector
+	R.Target = E
+
+	Dim KeyCode As String = R.RunMethod("getCode")
+	Dim ControlDown As Boolean = R.RunMethod("isControlDown")
+
+	If ControlDown Then
+		Select KeyCode
+			Case "N", "O", "S"
+				R.RunMethod("consume")
+
+				Select KeyCode
+					Case "N"
+						NewProgram
+					Case "O"
+						Load
+					Case "S"
+						Save
+				End Select
+
+		End Select
+
+	Else If KeyCode = "F5" Then
+		R.RunMethod("consume")
+
+		Basic58.LoadProgram(taEditor.Text)
+		Basic58.RunProgram
+	End If
+End Sub
+#end Region
 
 ' ----------------------------------------------------------------
 ' CALLBACKS
@@ -229,10 +268,13 @@ End Sub
 Private Sub taEditor_TextChanged (Old As String, New As String)
 	If UpdatingEditor Then Return
 
-	If LoadingProgram = False Then
-		ProgramModified = True
-		UpdatePageTitle
+	If LoadingProgram Then
+		LoadingProgram = False
+		Return
 	End If
+
+	ProgramModified = True
+	UpdatePageTitle
 
 	Dim UpperText As String = Utils.ConvertBasicTextToUpper(New)
 
@@ -244,6 +286,18 @@ Private Sub taEditor_TextChanged (Old As String, New As String)
 		taEditor.Text = UpperText
 		TextArea.RunMethod("positionCaret", Array(CursorPosition))
 		UpdatingEditor = False
+	End If
+End Sub
+
+Private Sub taEditor_MouseClicked (EventData As MouseEvent)
+	If EventData.ClickCount = 2 Then
+		taEditor.Text = ""
+	End If	
+End Sub
+
+Private Sub taOutput_MouseClicked (EventData As MouseEvent)
+	If EventData.ClickCount = 2 Then
+		taOutput.Text = ""
 	End If
 End Sub
 
@@ -277,7 +331,10 @@ Private Sub ProcessCommand(Command As String)
 		Case UpperCommand = "RUN"
 			Basic58.LoadProgram(taEditor.Text)
 			Basic58.RunProgram
-
+			
+		Case UpperCommand = "EASTER"
+			ShowEasterEgg
+			
 		Case Else
 			Basic58.ExecuteCommand(Command)
 	End Select
@@ -442,10 +499,15 @@ Private Sub LoadProgram(FileName As String)
 		Next
 
 		'Restore the complete source code in the editor.
-		LoadingProgram = True
-		taEditor.Text = EditorText.ToString
-		LoadingProgram = False
+		Dim LoadedText As String = Utils.ConvertBasicTextToUpper(EditorText.ToString)
 
+		If taEditor.Text <> LoadedText Then
+			LoadingProgram = True
+			taEditor.Text = LoadedText
+		Else
+			LoadingProgram = False
+		End If
+		
 		'Rebuild the interpreter program.
 		Basic58.LoadProgram(taEditor.Text)
 
@@ -515,7 +577,7 @@ Private Sub Save
 End Sub
 
 Private Sub UpdatePageTitle
-	Dim PageTitle As String = $"${VERSION} - ${CurrentFileName}"$
+	Dim PageTitle As String = $"${APPNAME} - ${CurrentFileName}"$
 
 	If ProgramModified Then
 		PageTitle = PageTitle & " *"
@@ -525,6 +587,8 @@ Private Sub UpdatePageTitle
 End Sub
 
 Private Sub ConfirmDiscardChanges As ResumableSub
+	Log($"[ConfirmDiscardChanges] ProgramModified=${ProgramModified}"$)
+
 	If ProgramModified = False Then Return True
 
 	xui.Msgbox2Async("Discard unsaved changes?", "CONFIRM", _
@@ -534,3 +598,35 @@ Private Sub ConfirmDiscardChanges As ResumableSub
 	Return Result = xui.DialogResponse_Positive
 End Sub
 
+' ----------------------------------------------------------------
+' MESSAGES OUTPUT TERMINAL
+' ----------------------------------------------------------------
+
+Private Sub ShowWelcomMessage
+	taOutput.Text = ""
+	PrintText(taOutput, "**** BASIC-58 ****")
+	PrintText(taOutput, "BASIC INTERPRETER")
+	PrintText(taOutput, "TYPE HELP FOR COMMANDS")
+	PrintText(taOutput, "----------------------")
+	PrintText(taOutput, APPVERSION)
+	PrintText(taOutput, APPCOPYRIGHT)
+	lblStatus.Text = "READY"
+End Sub
+
+Private Sub ShowEasterEgg
+	taOutput.Text = ""
+	PrintText(taOutput, "================================")
+	PrintText(taOutput, "       B A S I C - 5 8")
+	PrintText(taOutput, "================================")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "HELLO, RETRO PROGRAMMER!")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "SOME THINGS NEVER GET OLD.")
+	PrintText(taOutput, "ESPECIALLY A GOOD BASIC PROGRAM.")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "KEEP CODING AND HAVE FUN!")
+	PrintText(taOutput, "")
+	PrintText(taOutput, "              :-)")
+	PrintText(taOutput, "================================")
+	lblStatus.Text = "ENJOY BASIC-58"
+End Sub

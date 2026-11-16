@@ -1,92 +1,116 @@
 # BASIC-58
 
-**Version 0.1.0**
+<p align="center">
+  <img src="images/BASIC-58-Logo.png"
+       alt="BASIC-58"
+       width="200">
+</p>
+
+**Version 1.0.0**
 
 An experimental BASIC interpreter written in BASIC (B4X), inspired by retro computing.
 
-## About the project
+---
 
-BASIC-58 is a personal hobby project inspired by retro computing and projects such as [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu).
+## About BASIC-58
 
-The project has two main goals:
+**BASIC-58** is a small, retro-inspired BASIC interpreter developed as a hobby project using [B4J](https://www.b4x.com/b4j.html).
 
-- **Learning:** exploring how to write a BASIC interpreter, from parsing expressions and handling variables to executing program lines and managing program flow.
-- **Sharing:** creating a simple programming environment that I can share with my grandchild, encouraging experimentation and learning by writing small BASIC programs.
+The project was inspired by classic computers and projects such as MEGS65 and Xemu. Its purpose is to explore how a BASIC interpreter works internally, from parsing and evaluating expressions to managing program flow and handling runtime errors.
 
-I also simply enjoy retro computing and the atmosphere of classic home computers, where you could switch on a machine, get a BASIC prompt and start programming.
+There is also a personal reason behind the project: BASIC-58 is intended to be shared with my grandchild as a way to discover programming, experiment with simple programs, and learn how computers execute instructions.
 
-BASIC-58 is not intended to be a complete implementation of a historical BASIC dialect. It is an evolving learning project, developed step by step.
+The familiar BASIC prompt, numbered program lines, and straightforward commands bring back some of the experience of programming on early personal computers.
 
-The idea is simple: keep BASIC approachable, make it fun to experiment with, and perhaps inspire someone else to discover programming.
+### A little bit of retro irony
 
-The ultimate goal is to make BASIC-58 a small, reliable, educational BASIC interpreter with a nostalgic terminal experience. 
-... and not a huge language implementation.
+BASIC-58 is itself written in BASIC — specifically, B4J.
 
-## A little bit of retro irony
+`So BASIC is being used to bring BASIC back.`
 
-There is something rather fitting about this project: **BASIC-58 is itself written in BASIC.**
-
-The interpreter is developed using [B4J](https://www.b4x.com/b4j.html), a modern BASIC-based development environment.
-
-So here we have a BASIC interpreter, written in BASIC, bringing BASIC back to life on a modern computer.
-
-**BASIC is being used to bring BASIC back.**
+---
 
 ## Features
 
-BASIC-58 currently supports:
+**BASIC-58** implements a practical subset of **classic BASIC**.
 
-- Interactive BASIC command prompt
-- Numbered program lines
-- Program editing, listing and deletion
-- Program execution
-- SAVE and LOAD
-- BREAK to interrupt program execution, including while waiting for INPUT
-- Numeric and string variables
-- Arithmetic expressions and operator precedence
-- String expressions and string concatenation
-- Numeric and string functions
-- INPUT with multiple variables
-- PRINT with formatting options
-- IF / THEN conditional branching
-- GOTO and GOSUB / RETURN
-- FOR / NEXT loops, including nested loops
-- ON GOTO and ON GOSUB
-- DATA, READ and RESTORE
-- RANDOMIZE and RND
-- Error handling with ON ERROR GOTO
-- RESUME and RESUME NEXT
+### Programming environment
 
---- 
+- Interactive BASIC command prompt.
+- Numbered program lines.
+- Enter, replace, list, and delete program lines.
+- Run BASIC programs.
+- Immediate-mode commands and expressions.
+- Create a new program.
+- Save and load BASIC program files.
+- Break program execution.
+- Clear the output area.
+
+### BASIC language
+
+- Numeric and string variables.
+- Arithmetic expressions and operator precedence.
+- String expressions and functions.
+- `LET` assignments.
+- `INPUT` and `PRINT`.
+- `IF ... THEN` conditional branching.
+- `GOTO` and `GOSUB`.
+- `RETURN`.
+- `FOR ... TO ... STEP` and `NEXT`.
+- `ON ... GOTO` and `ON ... GOSUB`.
+- `DATA`, `READ`, and `RESTORE`.
+- `RANDOMIZE` and `RND()`.
+- `REM` comments.
+- `END`.
+- Runtime error handling and recovery.
+
+### Error handling
+
+- `ON ERROR GOTO`
+- `ON ERROR GOTO 0`
+- `RESUME`
+- `RESUME NEXT`
+- `ERR`
+- `ERL`
+
+---
+
+## Screenshot
 
 <p align="center">
   <img src="images/BASIC-58-1.png"
-       alt="BASIC-58 running the Number Guessing Game"
+       alt="BASIC-58 running the temperature conversion"
        width="700">
 </p>
 
---- 
+---
 
 ## Requirements
 
-- B4J
-- B4XPages framework
-- A Java runtime supported by your B4J installation
+- Windows
+- Java runtime compatible with B4J
+- B4J 64-bit for development
+- B4XPages
+
+The application is developed with B4J.
+
+---
 
 ## Getting started
 
-Open the BASIC-58 project in B4J and run it.
-
-The interpreter provides an interactive command prompt.
+Start BASIC-58 to open the interactive command prompt.
 
 You can enter commands directly or create a numbered BASIC program.
 
 For example:
 
 ```basic
-10 PRINT "HELLO BASIC-58"
-20 PRINT 10 + 20
-30 END
+10 REM FIRST BASIC-58 PROGRAM
+20 LET A = 10
+30 LET B = 20
+40 PRINT "HELLO FROM BASIC-58"
+50 PRINT "THE SUM IS "; A + B
+60 END
 ```
 
 Enter:
@@ -98,83 +122,126 @@ RUN
 Expected output:
 
 ```text
-RUNNING...
-
-HELLO BASIC-58
-30
-
-READY.
+HELLO FROM BASIC-58
+THE SUM IS 30
 ```
 
-## Direct commands
+---
 
-These commands are entered directly at the interpreter prompt.
+## Command reference
+
+The following commands are available in the BASIC-58 environment.
 
 | Command | Description |
 |---|---|
-| HELP | Display available commands |
-| LIST | List the current program |
-| RUN | Execute the current program |
-| NEW | Clear the current program |
-| SAVE [filename] | Save the program |
-| LOAD [filename] | Load a program |
-| CLS | Clear the terminal |
-| PRINT expression | Print an expression immediately |
+| `HELP` | Display help information. |
+| `LIST` | List the current BASIC program. |
+| `RUN` | Execute the current program. |
+| `NEW` | Create a new empty program. |
+| `SAVE` | Save the current BASIC program to a program file. |
+| `LOAD` | Load a BASIC program from a program file. |
+| `CLS` | Clear the output area. |
+| `BREAK` | Interrupt program execution. |
 
-### Editing programs
+Immediate expressions can also be evaluated directly:
 
-Enter a line number followed by a BASIC statement to add or replace a program line.
+```basic
+PRINT 10 + 20
+PRINT "HELLO"
+```
 
-```text
+### Editing program lines
+
+BASIC programs use numbered lines.
+
+Entering a line number with new code inserts or replaces that line:
+
+```basic
 10 PRINT "HELLO"
 20 PRINT "WORLD"
 ```
 
-Entering an existing line number with no statement deletes that line.
+Entering a line number without code deletes the corresponding line:
 
-```text
+```basic
 20
 ```
 
-Use `LIST` to display the current program.
+The program can be displayed with `LIST`.
 
-### Saving and loading
+---
+
+## Saving and loading programs
+
+BASIC-58 supports saving and loading BASIC program files.
+
+Use:
 
 ```text
 SAVE
 ```
 
-Saves the program using the default filename `PROGRAM.BAS`.
+to save the current program.
 
-You can also specify a filename:
-
-```text
-SAVE TEST.BAS
-```
-
-To load a program:
+Use:
 
 ```text
-LOAD TEST.BAS
+LOAD
 ```
 
-Program files are stored in the application's directory.
+to load a previously saved program.
 
-## BASIC language reference
+The editor tracks modifications so that unsaved changes can be identified. When an operation would discard modified source code, BASIC-58 asks for confirmation.
+
+---
+
+## BASIC-58 language reference
 
 ### Variables
 
 BASIC-58 supports numeric and string variables.
 
+Numeric variables can use descriptive names.
+
+String variable names end with a dollar sign (`$`).
+
+Examples:
+
 ```basic
-10 LET A = 123
-20 LET NAME$ = "ROBERT"
-30 PRINT A
+10 LET TOTAL = 100
+20 LET NAME$ = "BASIC-58"
+30 PRINT TOTAL
 40 PRINT NAME$
-50 END
 ```
 
-String variable names end with `$`.
+String variables use a trailing dollar sign:
+
+```basic
+10 LET A$ = "BASIC-58"
+20 PRINT A$
+```
+
+Keep the single-letter restriction specifically in the `FOR / NEXT` section, where it belongs.
+
+### Important assignment rule
+
+Ordinary variable assignments require the `LET` keyword.
+
+Correct:
+
+```basic
+10 LET A = 10
+20 LET B = A * 2
+```
+
+Incorrect:
+
+```basic
+10 A = 10
+20 B = A * 2
+```
+
+`FOR` loop initialization and `READ` assignments are exceptions and do not require `LET`.
 
 ### Arithmetic operators
 
@@ -185,14 +252,17 @@ String variable names end with `$`.
 | `*` | Multiplication |
 | `/` | Division |
 
-Parentheses can be used to control expression evaluation.
+Parentheses can be used to control evaluation order.
+
+BASIC-58 evaluates arithmetic expressions using operator precedence.
+
+Example:
 
 ```basic
 10 LET A = 10 + 5 * 2
 20 LET B = (10 + 5) * 2
 30 PRINT A
 40 PRINT B
-50 END
 ```
 
 Expected output:
@@ -206,304 +276,46 @@ Expected output:
 
 | Statement | Description |
 |---|---|
-| IF ... THEN | Conditional branching |
-| GOTO | Jump to a program line |
-| GOSUB | Call a subroutine |
-| RETURN | Return from a subroutine |
-| FOR / NEXT | Repeat a block of statements |
-| ON ... GOTO | Computed branch |
-| ON ... GOSUB | Computed subroutine call |
-| BREAK | Interrupt program execution and return to the command prompt |
-| END | End program execution |
-| REM | Comment |
+| `IF ... THEN` | Conditional branch |
+| `GOTO` | Jump to a program line |
+| `GOSUB` | Call a subroutine |
+| `RETURN` | Return from a subroutine |
+| `FOR` | Start a counted loop |
+| `NEXT` | Continue or finish a loop |
+| `ON ... GOTO` | Select a branch |
+| `ON ... GOSUB` | Select a subroutine |
+| `END` | End program execution |
 
-### Input and output
+### Important IF ... THEN rule
 
-| Statement | Description |
-|---|---|
-| PRINT | Display text and expressions |
-| INPUT | Read user input |
+In BASIC-58, `IF ... THEN` accepts a line number as its target. It does not accept an inline statement.
 
-PRINT supports:
-
-- Semicolon-separated output items
-- Comma-separated print zones
-- `TAB(n)` for positioning
-- `SPC(n)` for inserting spaces
-- Suppression of the final newline using `;` or `,`
-
-### DATA handling
-
-| Statement | Description |
-|---|---|
-| DATA | Define constant data items |
-| READ | Assign DATA items to variables |
-| RESTORE | Reset the DATA read position |
-
-`RESTORE` currently resets the DATA pointer to the beginning of the DATA list.
-
-### Random numbers
-
-| Statement / Function | Description |
-|---|---|
-| RANDOMIZE | Initialize the random number generator |
-| RANDOMIZE expression | Initialize it using a numeric seed |
-| RND(1) | Generate a random number |
-
-Using the same seed produces the same random sequence.
-
-### Error handling
-
-| Statement / Variable | Description |
-|---|---|
-| ON ERROR GOTO line | Enable an error handler |
-| ON ERROR GOTO 0 | Disable error handling |
-| RESUME | Retry the failed statement |
-| RESUME NEXT | Continue with the next statement |
-| ERR | Current error code |
-| ERL | Line number where the error occurred |
-
-Supported error codes:
-
-| Code | Description |
-|---|---|
-| 5 | Undefined line |
-| 11 | Division by zero |
-| 20 | Syntax or expression error |
-| 22 | NEXT without FOR |
-| 23 | RETURN without GOSUB |
-
-## Numeric functions
-
-| Function | Description |
-|---|---|
-| ABS(x) | Absolute value |
-| INT(x) | Integer part |
-| SGN(x) | Sign of a number |
-| SQR(x) | Square root |
-| SIN(x) | Sine |
-| COS(x) | Cosine |
-| TAN(x) | Tangent |
-| LOG(x) | Natural logarithm |
-| EXP(x) | Exponential function |
-| RND(1) | Random number |
-| LEN(s$) | String length |
-| VAL(s$) | Convert string to number |
-| ASC(s$) | Character code |
-| INSTR(s$, t$) | Find a substring |
-
-## String functions
-
-| Function | Description |
-|---|---|
-| LEFT$(s$, n) | Return leftmost characters |
-| RIGHT$(s$, n) | Return rightmost characters |
-| MID$(s$, start, n) | Return part of a string |
-| STR$(x) | Convert number to string |
-| CHR$(n) | Convert character code to string |
-| SPACE$(n) | Generate spaces |
-| STRING$(n, c) | Generate repeated characters |
-| UCASE$(s$) | Convert to uppercase |
-| LCASE$(s$) | Convert to lowercase |
-| LTRIM$(s$) | Remove leading spaces |
-| RTRIM$(s$) | Remove trailing spaces |
-| TRIM$(s$) | Remove leading and trailing spaces |
-
-# Examples
-
-The following examples are based on the BASIC-58 regression tests.
-
-They are intended to demonstrate the currently implemented language features and provide small programs to experiment with.
-
-## 1. Hello, BASIC-58!
-
-A first BASIC program.
+Correct:
 
 ```basic
-10 PRINT "HELLO BASIC-58"
-20 PRINT "WELCOME TO BASIC"
-30 END
+10 IF A > 10 THEN 100
 ```
 
-Expected output:
-
-```text
-HELLO BASIC-58
-WELCOME TO BASIC
-```
-
-## 2. Variables and arithmetic
+Incorrect:
 
 ```basic
-10 LET A = 10
-20 LET B = 20
-30 LET C = A + B
-40 PRINT "RESULT: "; C
-50 PRINT "MULTIPLICATION: "; A * B
-60 END
+10 IF A > 10 THEN GOTO 100
+20 IF A > 10 THEN LET B = 5
+30 IF A > 10 THEN PRINT A
 ```
 
-Expected output:
-
-```text
-RESULT: 30
-MULTIPLICATION: 200
-```
-
-## 3. Expression evaluation
-
-Demonstrates operator precedence and parentheses.
+Use separate program lines for conditional actions:
 
 ```basic
-10 LET A = 10 + 5 * 2
-20 LET B = (10 + 5) * 2
-30 PRINT A
-40 PRINT B
-50 PRINT 100 / 5 + 3
-60 END
-```
-
-Expected output:
-
-```text
-20
-30
-23
-```
-
-## 4. String variables and concatenation
-
-```basic
-10 LET NAME$ = "ROBERT"
-20 LET TEXT$ = "HELLO " + "WORLD"
-30 PRINT TEXT$
-40 LET TEXT$ = CHR$(72) + CHR$(73)
-50 PRINT TEXT$
-60 LET TEXT$ = LEFT$(NAME$, 3) + "!"
-70 PRINT TEXT$
-80 END
-```
-
-Expected output:
-
-```text
-HELLO WORLD
-HI
-ROB!
-```
-
-## 5. Numeric functions
-
-```basic
-10 PRINT "SQUARE ROOT: "; SQR(144)
-20 PRINT "ABSOLUTE: "; ABS(-25)
-30 PRINT "INTEGER: "; INT(12.8)
-40 PRINT "SIGN: "; SGN(-10)
-50 PRINT "VALUE: "; VAL("123")
-60 PRINT "LENGTH: "; LEN("BASIC-58")
-70 END
-```
-
-Expected output:
-
-```text
-SQUARE ROOT: 12
-ABSOLUTE: 25
-INTEGER: 12
-SIGN: -1
-VALUE: 123
-LENGTH: 9
-```
-
-## 6. String functions
-
-```basic
-10 LET NAME$ = "BASIC-58"
-20 PRINT LEFT$(NAME$, 4)
-30 PRINT RIGHT$(NAME$, 4)
-40 PRINT MID$(NAME$, 3, 4)
-50 PRINT UCASE$("hello")
-60 PRINT LCASE$("WORLD")
-70 PRINT TRIM$("  BASIC  ")
-80 PRINT INSTR(NAME$, "BASIC")
-90 END
-```
-
-Expected output:
-
-```text
-MONO
-BASIC
-NOBA
-HELLO
-world
-BASIC
-5
-```
-
-## 7. INPUT
-
-Ask the user for a name and an age.
-
-```basic
-10 INPUT "ENTER NAME"; NAME$
-20 INPUT "ENTER AGE"; AGE
-30 PRINT "HELLO "; NAME$
-40 PRINT "YOU ARE "; AGE; " YEARS OLD"
-50 END
-```
-
-Example interaction:
-
-```text
-ENTER NAME?
-Robert
-ENTER AGE?
-68
-HELLO Robert
-YOU ARE 68 YEARS OLD
-```
-
-INPUT also supports multiple variables in one statement.
-
-```basic
-10 INPUT "NAME AND AGE"; NAME$, AGE
-20 PRINT "HELLO "; NAME$
-30 PRINT "YOU ARE "; AGE; " YEARS OLD"
-40 END
-```
-
-Example interaction:
-
-```text
-NAME AND AGE?
-Robert, 68
-HELLO Robert
-YOU ARE 68 YEARS OLD
-```
-
-## 8. IF / THEN
-
-Conditional execution.
-
-```basic
-10 LET A = 10
-20 IF A > 5 THEN 50
-30 PRINT "A IS FIVE OR LESS"
-40 GOTO 60
-50 PRINT "A IS GREATER THAN FIVE"
-60 END
-```
-
-Expected output:
-
-```text
-A IS GREATER THAN FIVE
+10 IF A < B THEN 50
+20 GOTO 60
+50 LET A = B
+60 PRINT A
 ```
 
 Supported comparison operators:
 
-| Operator | Meaning |
+| Operator | Description |
 |---|---|
 | `=` | Equal |
 | `<>` | Not equal |
@@ -512,374 +324,275 @@ Supported comparison operators:
 | `<=` | Less than or equal |
 | `>=` | Greater than or equal |
 
-Numeric comparisons and string equality/inequality are supported.
+### FOR / NEXT loops
 
-## 9. FOR / NEXT loops
-
-A simple counting loop.
+BASIC-58 supports counted loops, including nested loops and positive or negative step values.
 
 ```basic
-10 FOR A = 1 TO 5
-20 PRINT A
-30 NEXT A
+10 FOR I = 1 TO 5
+20 PRINT I
+30 NEXT I
 40 END
 ```
 
-Expected output:
-
-```text
-1
-2
-3
-4
-5
-```
-
-A loop with STEP:
+A step value can be specified:
 
 ```basic
-10 FOR A = 10 TO 50 STEP 10
-20 PRINT A
-30 NEXT A
+10 FOR I = 10 TO 0 STEP -2
+20 PRINT I
+30 NEXT I
 40 END
 ```
 
-Expected output:
+Loop variables must be single letters from A to Z.
 
-```text
-10
-20
-30
-40
-50
-```
+### INPUT and PRINT
 
-Negative STEP is also supported.
+`INPUT` reads values from the user.
 
 ```basic
-10 FOR A = 5 TO 1 STEP -1
-20 PRINT A
-30 NEXT A
-40 END
+10 INPUT "WHAT IS YOUR NAME? "; NAME$
+20 PRINT "HELLO "; NAME$
+30 END
 ```
 
-Expected output:
+Multiple input variables and comma-separated values are supported.
 
-```text
-5
-4
-3
-2
-1
+`PRINT` displays numeric and string expressions.
+
+`PRINT` supports the following formatting options:
+| Feature | Description |
+| ;	      | Separates expressions without inserting a comma or fixed-width spacing.|
+| ,	      | Separates output fields.|
+| TAB(n)  | Positions output at the specified column.|
+| SPC(n)  | Inserts the specified number of spaces.|
+
+A trailing semicolon or comma suppresses the automatic newline at the end of a PRINT statement.
+
+Example:
+```basic
+10 LET A = 10
+20 LET B = 20
+30 PRINT "A = "; A
+40 PRINT "B = "; B
+50 PRINT "SUM = "; A + B
+60 PRINT "VALUE"; TAB(20); "RESULT"
+70 PRINT "TOTAL"; SPC(5); A + B
+80 END
 ```
 
-Nested loops are supported:
+### DATA, READ and RESTORE
+
+`DATA` defines values in a program.
+
+`READ` assigns those values to variables.
+
+`RESTORE` resets the DATA read position.
 
 ```basic
-10 FOR A = 1 TO 3
-20 FOR B = 1 TO 2
-30 PRINT A; B
-40 NEXT B
-50 NEXT A
-60 END
+10 DATA 10,20,30,40,50
+20 FOR I = 1 TO 5
+30 READ A
+40 PRINT A
+50 NEXT I
+60 RESTORE
+70 READ B
+80 PRINT "FIRST VALUE AGAIN: "; B
+90 END
 ```
 
-Expected output:
+Numeric and string data are supported.
 
-```text
-11
-12
-21
-22
-31
-32
-```
+### Random numbers
 
-## 10. GOSUB / RETURN
+BASIC-58 supports `RND(1)` and `RANDOMIZE`.
 
-Subroutines allow code to be reused.
-
-```basic
-10 PRINT "MAIN PROGRAM"
-20 GOSUB 100
-30 PRINT "BACK IN MAIN"
-40 END
-100 PRINT "INSIDE SUBROUTINE"
-110 RETURN
-```
-
-Expected output:
-
-```text
-MAIN PROGRAM
-INSIDE SUBROUTINE
-BACK IN MAIN
-```
-
-Nested GOSUB calls are supported.
-
-## 11. ON GOTO
-
-Select a program branch using an expression.
-
-```basic
-10 LET A = 2
-20 ON A GOTO 100, 200, 300
-30 PRINT "NO BRANCH SELECTED"
-40 END
-100 PRINT "OPTION ONE"
-110 END
-200 PRINT "OPTION TWO"
-210 END
-300 PRINT "OPTION THREE"
-310 END
-```
-
-Expected output:
-
-```text
-OPTION TWO
-```
-
-The selection is one-based. An out-of-range selector continues with the next program line.
-
-## 12. ON GOSUB
-
-Select a subroutine using an expression.
-
-```basic
-10 LET A = 2
-20 ON A GOSUB 100, 200, 300
-30 PRINT "BACK IN MAIN"
-40 END
-100 PRINT "SUBROUTINE ONE"
-110 RETURN
-200 PRINT "SUBROUTINE TWO"
-210 RETURN
-300 PRINT "SUBROUTINE THREE"
-310 RETURN
-```
-
-Expected output:
-
-```text
-SUBROUTINE TWO
-BACK IN MAIN
-```
-
-## 13. DATA and READ
-
-DATA statements provide values that can be read into variables.
-
-```basic
-10 DATA 10, 20, 30, "HELLO", "WORLD"
-20 READ A, B, C, A$, B$
-30 PRINT A; B; C
-40 PRINT A$; " "; B$
-50 END
-```
-
-Expected output:
-
-```text
-102030
-HELLO WORLD
-```
-
-DATA can be defined in multiple program lines.
-
-Quoted strings can contain commas:
-
-```basic
-10 DATA 100, "HAMBURG, GERMANY"
-20 READ A, CITY$
-30 PRINT A
-40 PRINT CITY$
-50 END
-```
-
-Expected output:
-
-```text
-100
-HAMBURG, GERMANY
-```
-
-RESTORE resets the DATA pointer.
-
-```basic
-10 DATA 10, 20, 30
-20 READ A
-30 PRINT A
-40 RESTORE
-50 READ B
-60 PRINT B
-70 END
-```
-
-Expected output:
-
-```text
-10
-10
-```
-
-## 14. RANDOMIZE and RND
-
-Generate random numbers:
+Example:
 
 ```basic
 10 RANDOMIZE
-20 FOR A = 1 TO 5
-30 PRINT RND(1)
-40 NEXT A
-50 END
+20 LET DICE = INT(RND(1) * 6) + 1
+30 PRINT "DICE: "; DICE
+40 END
 ```
 
-The values change between runs when RANDOMIZE is called without a seed.
+---
 
-A fixed seed produces a repeatable sequence:
+## Mathematical functions
 
-```basic
-10 RANDOMIZE 12345
-20 FOR A = 1 TO 5
-30 PRINT RND(1)
-40 NEXT A
-50 END
-```
+BASIC-58 provides the following numeric functions.
 
-Expected output:
+| Function | Description |
+|---|---|
+| `INT(x)` | Integer part |
+| `ABS(x)` | Absolute value |
+| `SGN(x)` | Sign of a number |
+| `SQR(x)` | Square root |
+| `SIN(x)` | Sine |
+| `COS(x)` | Cosine |
+| `TAN(x)` | Tangent |
+| `LOG(x)` | Natural logarithm |
+| `EXP(x)` | Exponential |
+| `RND(1)` | Random number |
 
-```text
-0.966251
-0.10908
-0.588241
-0.488828
-0.050055
-```
+Trigonometric functions use radians.
 
-Running the program again with the same seed produces the same sequence.
+## String functions
 
-## 15. PRINT formatting
+BASIC-58 provides the following string functions.
 
-TAB and SPC can be used to format output.
+| Function | Description |
+|---|---|
+| `LEN(s$)` | String length |
+| `LEFT$(s$,n)` | Leftmost characters |
+| `RIGHT$(s$,n)` | Rightmost characters |
+| `MID$(s$,start,n)` | Extract part of a string |
+| `INSTR(s$,sub$)` | Find a substring |
+| `STR$(x)` | Convert a number to a string |
+| `VAL(s$)` | Convert a string to a number |
+| `ASC(s$)` | Character code |
+| `CHR$(n)` | Character from a code |
+| `SPACE$(n)` | String containing spaces |
+| `STRING$(n,c)` | Repeated character string |
+| `UCASE$(s$)` | Convert to uppercase |
+| `LCASE$(s$)` | Convert to lowercase |
+| `LTRIM$(s$)` | Remove leading spaces |
+| `RTRIM$(s$)` | Remove trailing spaces |
+| `TRIM$(s$)` | Remove leading and trailing spaces |
 
-```basic
-10 PRINT "NAME"; TAB(15); "VALUE"
-20 PRINT "TEMP"; TAB(15); "23.5"
-30 PRINT "HUMIDITY"; TAB(15); "60"
-40 PRINT "LEFT"; SPC(5); "RIGHT"
-50 END
-```
+---
 
-Expected output (spaces shown as normal terminal spacing):
+## Error handling
 
-```text
-NAME          VALUE
-TEMP          23.5
-HUMIDITY      60
-LEFT     RIGHT
-```
+BASIC-58 supports BASIC-style error handling.
 
-PRINT also supports comma-separated print zones and suppressing the final newline with a trailing semicolon or comma.
+The following statements and functions are available:
 
-## 16. Error handling
+| Statement / Function | Description |
+|---|---|
+| `ON ERROR GOTO` | Enable an error handler |
+| `ON ERROR GOTO 0` | Disable the error handler |
+| `RESUME` | Resume execution at the failing statement |
+| `RESUME NEXT` | Resume at the following statement |
+| `ERR` | Current error code |
+| `ERL` | Line number where the error occurred |
 
-Errors can be handled by an error-handling routine.
+Example:
 
 ```basic
 10 ON ERROR GOTO 100
-20 LET A = 10 / 0
-30 PRINT "PROGRAM CONTINUES"
-40 END
-100 PRINT "ERROR CODE: "; ERR
-110 PRINT "ERROR LINE: "; ERL
-120 RESUME NEXT
+20 LET A = 10
+30 LET B = 0
+40 LET C = A / B
+50 PRINT C
+60 END
+100 PRINT "ERROR "; ERR
+110 PRINT "IN LINE "; ERL
+120 END
 ```
 
-Expected output:
+BASIC-58 reports runtime errors and provides a way to recover or continue program execution.
 
-```text
-ERROR CODE: 11
-ERROR LINE: 20
-PROGRAM CONTINUES
-```
+---
 
-`RESUME NEXT` continues execution at the next program line.
+## Example programs
 
-## 17. SAVE and LOAD
+BASIC-58 includes a collection of example programs demonstrating the language features and practical capabilities of the interpreter.
+These examples cover arithmetic, variables, loops, conditional branching, input, output, mathematical functions, string handling, and DATA processing.
 
-Programs can be saved and loaded.
+The examples are organized into four folders.
 
-Example program:
+### 01_LANGUAGE
 
-```basic
-10 PRINT "SAVE AND LOAD TEST"
-20 LET A = 123
-30 PRINT A
-40 END
-```
+Demonstrations of BASIC language features, including:
 
-Example workflow:
+- Arithmetic and expressions
+- INPUT and PRINT
+- Conditional statements
+- FOR/NEXT loops and nested loops
+- GOSUB/RETURN and ON GOTO/ON GOSUB
+- Numeric and string functions
+- DATA, READ and RESTORE
+- Random numbers
+- Error handling and recovery
+- Program saving and loading
 
-```text
-SAVE PROGRAM.BAS
-SAVED: PROGRAM.BAS
+### 02_PRACTICAL
 
-NEW
-NEW PROGRAM
+Complete programs covering mathematical problems and everyday
+calculations, including:
 
-LIST
-NO PROGRAM
+- Temperature conversion
+- Compound interest
+- Grade averages
+- Prime numbers
+- Pythagorean triples
+- Unit conversion
+- Electricity costs
+- Square root tables
+- Loan and mortgage calculations
+- Statistics
+- Savings plans
+- Fibonacci numbers and factorials
 
-LOAD PROGRAM.BAS
-LOADED: PROGRAM.BAS
-LINES: 4
+### 03_GAMES
 
-LIST
-10 PRINT "SAVE AND LOAD TEST"
-20 LET A = 123
-30 PRINT A
-40 END
+Interactive programs demonstrating BASIC-58 in a playful way:
 
-RUN
-RUNNING...
+- Dice game
+- Number guessing game
 
-SAVE AND LOAD TEST
-123
+### 99_DEVELOPMENT
 
-READY.
-```
+Additional programs used during development, debugging and
+regression testing of the BASIC-58 interpreter.
 
-## Regression testing
+---
 
-BASIC-58 has been tested with a collection of regression programs covering the implemented language features.
+## Testing
 
-The tests include:
+BASIC-58 has been tested incrementally during development.
 
-1. Numeric and string variables, arithmetic and expression precedence.
-2. Numeric and string functions.
-3. PRINT formatting, TAB, SPC and print zones.
-4. INPUT with custom prompts and multiple mixed variables.
-5. IF / THEN, GOTO and GOSUB / RETURN.
-6. FOR / NEXT, positive and negative STEP values, and nested loops.
-7. ON GOTO and ON GOSUB, including out-of-range selection.
-8. RANDOMIZE and repeatable RND sequences.
-9. DATA, READ and RESTORE, including quoted strings and commas.
-10. Error handling, ERR, ERL, RESUME and RESUME NEXT.
-11. SAVE, NEW, LIST, LOAD, RUN and immediate PRINT.
+### Application acceptance tests
 
-All eleven regression test areas have passed.
+The following application areas have been checked:
+
+1. Startup and user interface.
+2. Editor and immediate commands.
+3. NEW command and editor behavior.
+4. SAVE and LOAD operations.
+5. Error handling and recovery.
+6. Keyboard shortcuts and application lifecycle.
+
+All six acceptance test groups passed.
+
+### BASIC program regression tests
+
+A growing collection of BASIC programs has been developed and tested, covering language features, practical calculations, mathematical problems and interactive games.
+
+Additional language tests cover:
+
+- Numeric and string expressions.
+- Mathematical and string functions.
+- Conditional branching.
+- Nested FOR/NEXT loops.
+- GOTO and GOSUB.
+- ON GOTO and ON GOSUB.
+- DATA, READ and RESTORE.
+- INPUT validation.
+- Runtime errors and recovery.
+
+---
 
 ## Project status
 
-BASIC-58 is an evolving hobby and learning project.
+**BASIC-58** is a working hobby project and a learning exercise in interpreter development.
 
-The interpreter is being developed incrementally, with new features tested before moving on to the next step.
+The current release represents a tested and usable implementation of its BASIC language subset.
 
-The focus is on keeping the implementation understandable and the programming environment approachable.
+The project is intentionally kept small and approachable. It is not intended to be a complete implementation of any particular historical BASIC dialect.
 
-Perhaps the best test of the project will be whether someone who has never used a BASIC computer can sit down, type a few lines and discover the fun of programming.
+---
 
 ## License
 
@@ -888,7 +601,7 @@ See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## Credits and acknowledgements
+## Credits, Acknowledgements and Inspiration
 
 - [Anywhere Software](https://www.b4x.com/) for the B4X suite of RAD development tools.
 - [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu) for inspiration from the retro-computing community.
@@ -899,7 +612,7 @@ See the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
-BASIC-58 is an experimental hobby project developed for educational and learning purposes.
+**BASIC-58** is an experimental hobby project developed for educational and learning purposes.
 
 - The software is provided "AS IS", without warranty of any kind.
 - It is not intended for professional, commercial, safety-critical or industrial control applications.
@@ -910,6 +623,6 @@ All product names, logos, trademarks and brands mentioned in this project are th
 
 ---
 
-> *Made with curiosity, a little nostalgia, and the conviction that BASIC still has something to teach us.*
+> *BASIC-58 — Made with curiosity, a little nostalgia, and the conviction that BASIC still has something to teach us.*
 
 ---
