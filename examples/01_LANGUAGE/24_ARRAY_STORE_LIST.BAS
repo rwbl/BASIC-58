@@ -1,0 +1,10 @@
+10 DIM A(5)
+20 LET A(1) = 12
+30 LET A(2) = 25
+40 LET A(3) = 38
+50 LET A(4) = 41
+60 LET A(5) = 57
+70 FOR I = 1 TO 5
+80 PRINT I;  "="; A(I)
+90 NEXT I
+100 END

@@ -22,6 +22,7 @@ Private Sub Class_Globals
 	' Programs, vars, ' User-defined functions (UDFs)
 	Private ProgramLines As Map
 	Private Variables As Map
+	Private Arrays As Map
 	Private Functions As Map
 
 	' Program execution state
@@ -77,6 +78,7 @@ Public Sub Initialize(Callback As Object, EventName As String)
 	' Init all lists and maps
 	ProgramLines.Initialize
     Variables.Initialize
+	Arrays.Initialize
     RunLines.Initialize
     InputVariables.Initialize
     ForStack.Initialize
@@ -168,6 +170,8 @@ Public Sub RunProgram
 	End If
 
 	Variables.Clear
+	Arrays.Clear
+
 	WaitingForInput = False
 	WaitingForDelay = False
 	WaitingForHardwareCommand = False
@@ -352,13 +356,31 @@ Public Sub SubmitInput(Command As String)
 			Return
 		End If
 
+
 		'Assign values to variables.
 		For i = 0 To InputVariables.Size - 1
 			Dim VariableName As String = InputVariables.Get(i)
 			Dim InputValue As String = InputValues.Get(i)
 
-			Variables.Put(VariableName, InputValue)
+			'Array element assignment.
+			Dim OpenPos As Int = VariableName.IndexOf("(")
+
+			If OpenPos > 0 Then
+
+				Dim ClosePos As Int = VariableName.IndexOf(")")
+				Dim ArrayName As String = VariableName.SubString2(0, OpenPos)
+				Dim ArrayIndex As Int = VariableName.SubString2(OpenPos + 1, ClosePos)
+
+				Dim Values As List = Arrays.Get(ArrayName)
+				Values.Set(ArrayIndex - 1, InputValue)
+
+			Else
+
+				Variables.Put(VariableName, InputValue)
+
+			End If
 		Next
+
 
 		WaitingForInput = False
 
@@ -393,6 +415,41 @@ Private Sub ExecuteLet(LineCode As String) As Boolean
 	Dim Expression As String = Assignment.SubString(EqualPos + 1).Trim
 
 	If Expression = "" Then Return False
+
+	'Array element assignment.
+	Dim OpenPos As Int = VariableName.IndexOf("(")
+	Dim ClosePos As Int = VariableName.IndexOf(")")
+
+	If OpenPos > 0 And ClosePos > OpenPos Then
+
+		Dim ArrayName As String = VariableName.SubString2(0, OpenPos).Trim
+		Dim IndexText As String = VariableName.SubString2(OpenPos + 1, ClosePos).Trim
+
+		If IsValidVariable(ArrayName) = False Then Return False
+		If Arrays.ContainsKey(ArrayName) = False Then Return False
+
+		Dim IndexValue As Double = EvaluateNumericExpression(IndexText)
+
+		If ExprError Then Return False
+
+		If IndexValue < 1 Or IndexValue <> Floor(IndexValue) Then Return False
+
+		Dim ArrayIndex As Int = IndexValue
+		Dim Values As List = Arrays.Get(ArrayName)
+
+		If ArrayIndex > Values.Size Then Return False
+
+		Dim Result As Double = EvaluateNumericExpression(Expression)
+
+		If ExprError Then Return False
+
+		Values.Set(ArrayIndex - 1, NumberFormat2(Result, 1, 0, 6, False))
+
+		Return True
+
+	End If
+
+
 
 	If IsValidVariable(VariableName) = False Then Return False
 
@@ -868,6 +925,12 @@ Private Sub ContinueProgram
 				WaitingForInput = True
 				Return
 
+			Case UpperLine.StartsWith("DIM ")
+				If ExecuteDim(LineCode) = False Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+				
 			Case UpperLine.StartsWith("LET ")
 				If ExecuteLet(LineCode) = False Then
 
@@ -1544,6 +1607,49 @@ Private Sub ParseFactor As Double
 				End If
 			End If
 
+			'Array element.
+			If Arrays.ContainsKey(Name) Then
+
+				Dim IndexValue As Double = ParseExpression
+
+				SkipSpaces
+
+				If ExprError Or ExprPos >= ExprText.Length Then
+					ExprError = True
+					Return 0
+				End If
+
+				If ExprText.SubString2(ExprPos, ExprPos + 1) <> ")" Then
+					ExprError = True
+					Return 0
+				End If
+
+				ExprPos = ExprPos + 1
+
+				'Validate array index.
+				If IndexValue < 1 Or IndexValue <> Floor(IndexValue) Then
+					ExprError = True
+					Return 0
+				End If
+
+				Dim Values As List = Arrays.Get(Name)
+
+				If IndexValue > Values.Size Then
+					ExprError = True
+					Return 0
+				End If
+
+				Dim ArrayValue As String = Values.Get(IndexValue - 1)
+
+				If IsNumber(ArrayValue) = False Then
+					ExprError = True
+					Return 0
+				End If
+
+				Return ArrayValue
+
+			End If
+
 			'Mathematical function.
 			Dim Argument As Double = ParseExpression
 
@@ -2062,17 +2168,51 @@ Private Sub ExecuteInput(LineCode As String) As Boolean
 	Return True
 End Sub
 
+
 Private Sub AddInputVariable(VariableName As String) As Boolean
 
 	VariableName = VariableName.ToUpperCase
 
-	If IsValidVariable(VariableName) = False Then Return False
+	'Check for array element.
+	Dim OpenPos As Int = VariableName.IndexOf("(")
+	Dim ClosePos As Int = VariableName.IndexOf(")")
+
+	If OpenPos > 0 Then
+
+		If ClosePos <> VariableName.Length - 1 Then Return False
+
+		Dim ArrayName As String = VariableName.SubString2(0, OpenPos).Trim
+		Dim IndexText As String = VariableName.SubString2(OpenPos + 1, ClosePos).Trim
+
+		If IsValidVariable(ArrayName) = False Then Return False
+		If ArrayName.EndsWith("$") Then Return False
+		If Arrays.ContainsKey(ArrayName) = False Then Return False
+
+		Dim IndexValue As Double = EvaluateNumericExpression(IndexText)
+
+		If ExprError Then Return False
+		If IndexValue < 1 Or IndexValue <> Floor(IndexValue) Then Return False
+
+		Dim ArrayIndex As Int = IndexValue
+		Dim Values As List = Arrays.Get(ArrayName)
+
+		If ArrayIndex > Values.Size Then Return False
+
+		'Store the resolved array index.
+		VariableName = ArrayName & "(" & ArrayIndex & ")"
+
+	Else
+
+		If IsValidVariable(VariableName) = False Then Return False
+
+	End If
 
 	InputVariables.Add(VariableName)
 
 	Return True
 
 End Sub
+
 
 'This defines one consistent rule: maximum eight characters in total, including the optional $.
 'Examples:
@@ -2790,7 +2930,8 @@ End Sub
 Public Sub ClearProgram
     ProgramLines.Clear
     Variables.Clear
-
+	Arrays.Clear
+	
     RunLines.Clear
     InputVariables.Clear
     ForStack.Clear
@@ -3033,3 +3174,57 @@ Private Sub EvaluateUserFunction(FunctionName As String, Arguments As List) As D
 
 End Sub
 #End Region
+
+#Region Arrays
+Private Sub ExecuteDim(LineCode As String) As Boolean
+
+	Dim Statement As String = LineCode.Trim.ToUpperCase
+
+	If Statement.StartsWith("DIM ") = False Then Return False
+
+	Dim Declaration As String = Statement.SubString(4).Trim
+
+	Dim OpenPos As Int = Declaration.IndexOf("(")
+	Dim ClosePos As Int = Declaration.IndexOf(")")
+
+	If OpenPos <= 0 Or ClosePos <= OpenPos Then Return False
+
+	Dim ArrayName As String = Declaration.SubString2(0, OpenPos).Trim
+	Dim SizeText As String = Declaration.SubString2(OpenPos + 1, ClosePos).Trim
+	'Log("Declaration: " & Declaration)
+	'Log("ArrayName: " & ArrayName)
+	'Log("SizeText: " & SizeText)
+	'Log("IsNumber: " & IsNumber(SizeText))
+	
+	'Validate array name.
+	If IsValidVariable(ArrayName) = False Then Return False
+	If ArrayName.EndsWith("$") Then Return False
+
+	'Reject duplicate declarations.
+	If Arrays.ContainsKey(ArrayName) Then Return False
+
+	'Validate array size.
+	If IsNumber(SizeText) = False Then Return False
+
+	Dim ArraySize As Int = SizeText
+
+	If ArraySize <= 0 Then Return False
+
+	'Create and initialize the array.
+	Dim Values As List
+	Values.Initialize
+
+	For i = 1 To ArraySize
+		Values.Add(0)
+	Next
+
+	'Log("Array size: " & ArraySize)
+	'Log("Array values count: " & Values.Size)
+	Arrays.Put(ArrayName, Values)
+	' Log("DIM SUCCESS: " & ArrayName)
+	
+	Return True
+
+End Sub
+#End Region
+
