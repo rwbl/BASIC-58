@@ -1,27 +1,38 @@
 ﻿AppType=JavaFX
-Build1=Default,de.rwblinn.retrobasic
-File1=Icon.png
-File2=MainPage.bjl
+Build1=Default,de.rwblinn.basic58
+File1=Help.txt
+File2=Icon.png
+File3=Main.css
+File4=MainPage.bjl
 FileGroup1=Default Group
-FileGroup2=New Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+FileGroup4=New Group
 Group=Default Group
 Library1=b4xpages
 Library2=cssutils
-Library3=jcore
-Library4=jfx
-Library5=designerutils
+Library3=designerutils
+Library4=jcore
+Library5=jfx
+Library6=jrandomaccessfile
+Library7=jreflection
+Library8=jserial
+Library9=byteconverter
 Module1=|relative|..\B4XMainPage
-Module2=|relative|..\Basic58Interpreter
-Module3=|relative|..\DesignerToolbar
-Module4=|relative|..\Utils
-NumberOfFiles=2
-NumberOfLibraries=5
-NumberOfModules=4
+Module2=|relative|..\B58Interpreter
+Module3=|relative|..\B58Protocol
+Module4=|relative|..\B58Serial
+Module5=|relative|..\B58System
+Module6=|relative|..\DesignerToolbar
+Module7=|relative|..\Utils
+NumberOfFiles=4
+NumberOfLibraries=9
+NumberOfModules=7
 Version=10.7
 @EndOfDesignText@
 #Region Project Attributes 
-	#MainFormWidth: 600
-	#MainFormHeight: 600 
+	#MainFormWidth: 800
+	#MainFormHeight: 700 
 #End Region
 
 Sub Process_Globals
@@ -63,3 +74,7 @@ Public Sub MainForm_IconifiedChanged (Iconified As Boolean)
 	B4XPages.Delegate.MainForm_IconifiedChanged(Iconified)
 End Sub
 #End Region
+
+Private Sub cbCommands_ValueChanged (Value As Object)
+	
+End Sub

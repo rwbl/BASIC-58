@@ -1,0 +1,201 @@
+BASIC-58 :: HELP
+==================================================
+
+1. COMMANDS
+
+Commands entered directly at the BASIC prompt.
+
+  HELP              Display this help
+  LIST              List the current program
+  RUN               Run the current program
+  NEW               Create a new BASIC program
+  LOAD [filename]   Load a program
+  SAVE [filename]   Save a program
+  CLS               Clear the terminal
+  PRINT expression  Evaluate and print an expression
+
+
+2. PROGRAM STATEMENTS
+
+Program statements are entered with a line number.
+
+  LET variable = expression
+      Assign a numeric or string value
+
+  INPUT [prompt;] variables
+      Read values from the terminal
+
+  PRINT expressions
+      Display values and text
+
+  IF condition THEN line
+      Conditional branch
+
+  GOTO line
+      Jump to a program line
+
+  GOSUB line
+      Call a subroutine
+
+  RETURN
+      Return from a subroutine
+
+  FOR variable = start TO limit [STEP value]
+      Start a counting loop
+
+  NEXT [variable]
+      Continue or finish a FOR loop
+
+  ON expression GOTO line,...
+      Computed branch
+
+  ON expression GOSUB line,...
+      Computed subroutine call
+
+  DATA value,...
+      Define data values
+
+  READ variable,...
+      Read values from DATA
+
+  RESTORE
+      Reset DATA reading position
+
+  RANDOMIZE [expression]
+      Initialize the random number generator
+
+  REM comment
+      Add a program comment
+
+  END
+      End program execution
+
+
+3. USER-DEFINED FUNCTIONS
+
+Define your own numeric functions.
+
+  DEF FN name(parameter) = expression
+
+  DEF FN name(parameter,parameter,...) = expression
+
+Example:
+
+  10 DEF FN DOUBLE(X) = X * 2
+  20 DEF FN ADD(X,Y) = X + Y
+  30 PRINT FN DOUBLE(21)
+  40 PRINT FN ADD(12,30)
+
+Notes:
+  - Functions accept one or more numeric parameters.
+  - Arguments can be expressions.
+  - Functions can call other user-defined functions.
+  - A function must be defined before it is called.
+  - A new definition replaces an existing definition.
+
+
+4. NUMERIC FUNCTIONS
+
+  ABS(x)       Absolute value
+  INT(x)       Integer part
+  SGN(x)       Sign of a number
+  SQR(x)       Square root
+
+  SIN(x)       Sine
+  COS(x)       Cosine
+  TAN(x)       Tangent
+
+  LOG(x)       Natural logarithm
+  EXP(x)       Exponential
+  RND(x)       Random number
+
+
+5. STRING AND CONVERSION FUNCTIONS
+
+  LEN(s)       String length
+  LEFT$(s,n)   Leftmost n characters
+  RIGHT$(s,n)  Rightmost n characters
+  MID$(s,p,n)  Extract part of a string
+
+  STR$(x)      Convert number to string
+  VAL(s)       Convert string to number
+  ASC(s)       Character code
+  CHR$(n)      Character from code
+
+  SPACE$(n)    String of spaces
+  STRING$(n,c) Repeated character
+
+  UCASE$(s)    Convert to uppercase
+  LCASE$(s)    Convert to lowercase
+  LTRIM$(s)    Remove leading spaces
+  RTRIM$(s)    Remove trailing spaces
+  TRIM$(s)     Remove leading and trailing spaces
+
+  INSTR(s,t)   Find a substring
+
+
+6. PRINT FORMATTING
+
+  TAB(n)       Move to column n
+  SPC(n)       Print n spaces
+
+  ;            Separate items without advancing
+  ,            Advance to the next print zone
+
+
+7. ERROR HANDLING
+
+  ON ERROR GOTO line
+      Enable error handling at the specified line
+
+  ON ERROR GOTO 0
+      Disable error handling
+
+  RESUME
+      Retry the statement that caused the error
+
+  RESUME NEXT
+      Continue with the next statement
+
+  ERR
+      Error code
+
+  ERL
+      Line number where the error occurred
+
+
+8. SYSTEM COMMANDS
+
+  @SYS SHOW TIME
+      Display system time
+
+  @SYS SHOW DATE
+      Display system date
+
+
+9. EXECUTION COMMANDS
+
+  @DELAY milliseconds
+      Pause program execution asynchronously
+
+
+10. SERIAL COMMANDS
+
+  @SER CONNECT COMx
+      Connect to a serial controller
+
+  @SER DISCONNECT
+      Disconnect the controller
+
+  @SER LISTPORTS
+      List available COM ports
+
+  @SER LED adr ON
+      Switch the specified LED on
+
+  @SER LED adr OFF
+      Switch the specified LED off
+
+
+==================================================
+END OF HELP

@@ -59,10 +59,11 @@ BASIC-58 is itself written in BASIC — specifically, B4J.
 - `FOR ... TO ... STEP` and `NEXT`.
 - `ON ... GOTO` and `ON ... GOSUB`.
 - `DATA`, `READ`, and `RESTORE`.
-- `RANDOMIZE` and `RND()`.
+- `RANDOMIZE` and `RND(1)`.
 - `REM` comments.
 - `END`.
-- Runtime error handling and recovery.
+- User-defined numeric functions (`DEF FN`).
+- Multiple function parameters and nested function calls.- Runtime error handling and recovery.
 
 ### Error handling
 
@@ -221,8 +222,6 @@ String variables use a trailing dollar sign:
 20 PRINT A$
 ```
 
-Keep the single-letter restriction specifically in the `FOR / NEXT` section, where it belongs.
-
 ### Important assignment rule
 
 Ordinary variable assignments require the `LET` keyword.
@@ -362,10 +361,11 @@ Multiple input variables and comma-separated values are supported.
 
 `PRINT` supports the following formatting options:
 | Feature | Description |
-| ;	      | Separates expressions without inserting a comma or fixed-width spacing.|
-| ,	      | Separates output fields.|
-| TAB(n)  | Positions output at the specified column.|
-| SPC(n)  | Inserts the specified number of spaces.|
+|---|---|
+| `;` | Separates expressions without inserting spacing. |
+| `,` | Advances output to the next print zone. |
+| `TAB(n)` | Positions output at the specified column. |
+| `SPC(n)` | Inserts the specified number of spaces. |
 
 A trailing semicolon or comma suppresses the automatic newline at the end of a PRINT statement.
 
@@ -405,7 +405,7 @@ Numeric and string data are supported.
 
 ### Random numbers
 
-BASIC-58 supports `RND(1)` and `RANDOMIZE`.
+BASIC-58 supports `RANDOMIZE` and `RND(1)`.
 
 Example:
 
@@ -415,6 +415,31 @@ Example:
 30 PRINT "DICE: "; DICE
 40 END
 ```
+
+### User-defined functions
+
+BASIC-58 supports user-defined numeric functions using `DEF FN`.
+
+Functions can have one or more parameters and return the result of a numeric expression.
+
+Example:
+
+```basic
+10 DEF FN DOUBLE(X) = X * 2
+20 DEF FN ADD(X,Y) = X + Y
+30 PRINT FN DOUBLE(21)
+40 PRINT FN ADD(12,30)
+50 END
+```
+Expected Output:
+```
+42
+42
+```
+
+Functions can call other user-defined functions, allowing nested function expressions.
+
+A function must be defined before it is called during program execution. Defining an existing function again replaces its previous definition.
 
 ---
 
@@ -495,6 +520,83 @@ BASIC-58 reports runtime errors and provides a way to recover or continue progra
 
 ---
 
+## System commands
+
+BASIC-58 provides commands for accessing basic host system information and controlling program execution.
+
+### System information
+
+#### Display the current system time and date.
+```text
+@SYS SHOW TIME
+@SYS SHOW DATE
+```
+
+#### Execution delay
+```
+@DELAY milliseconds
+```
+Pause program execution asynchronously for the specified number of milliseconds.
+The asynchronous implementation allows the application to remain responsive during the delay.
+
+---
+
+## Serial communication and hardware control
+
+BASIC-58 includes a serial communication interface that allows BASIC programs to interact with external hardware.
+
+The communication is based on a compact, fixed-length **five-byte binary protocol**.  
+Its simple structure makes it possible to communicate with different devices and microcontrollers without requiring a complex communication stack.
+
+### Serial commands
+
+```text
+@SER CONNECT COMx
+@SER DISCONNECT
+@SER LISTPORTS
+@SER LED adr ON
+@SER LED adr OFF
+```markdown
+
+These commands provide serial connection management and basic hardware control.
+
+### Communication protocol
+The protocol uses five bytes per message:
+```markdown
+Byte	Description
+1	Header
+2	Device address
+3	Command
+4	Value
+5	Footer
+```markdown
+
+Communication is bi-directional. BASIC-58 can send commands to an external device and receive responses or acknowledgements.
+
+The protocol is deliberately kept simple and compact. It is not restricted to a specific microcontroller or programming language.  
+Any device implementing the same protocol can communicate with BASIC-58.
+
+### Current implementation
+Serial communication has been implemented and tested with a microcontroller running B4R firmware.
+
+The B4J application handles the serial connection, message framing, acknowledgement handling and communication timeouts.
+Further development
+The serial interface is intended to be developed further.
+
+Planned areas include:
+- Testing communication with standard Python scripts.
+- Testing communication with MicroPython on supported microcontrollers.
+- Extending the protocol commands and hardware control capabilities.
+- Exploring additional applications for small automation and maker projects.
+This opens up interesting possibilities for BASIC-58. 
+For example, BASIC programs could control LEDs, read sensor values, operate small mechanisms or interact with custom electronic projects.
+
+The aim is to make BASIC-58 not only a retro-inspired programming environment, but also a simple platform for experimenting with hardware and physical computing.
+
+> **BASIC-58 is more than a retro-inspired BASIC interpreter. It is a small programming environment that can reach beyond the computer screen and control real hardware.**
+
+---
+
 ## Example programs
 
 BASIC-58 includes a collection of example programs demonstrating the language features and practical capabilities of the interpreter.
@@ -542,6 +644,13 @@ Interactive programs demonstrating BASIC-58 in a playful way:
 - Dice game
 - Number guessing game
 
+### 04_GAMES
+
+Demonstrating serial communication
+
+- LED blink
+- LED SOS
+
 ### 99_DEVELOPMENT
 
 Additional programs used during development, debugging and
@@ -581,6 +690,12 @@ Additional language tests cover:
 - DATA, READ and RESTORE.
 - INPUT validation.
 - Runtime errors and recovery.
+- User-defined numeric functions.
+- Multiple function parameters.
+- Nested function calls.
+- Function parameter isolation.
+- Function definition and redefinition.
+- Function argument and expression error handling.
 
 ---
 

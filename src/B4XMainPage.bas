@@ -30,7 +30,7 @@ Version=9.85
 Sub Class_Globals
 	' A tiny BASIC interpreter
 	Private APPNAME As String = "BASIC-58"
-	Private APPVERSION As String = "v1.0.0 (Build 20261116)"
+	Private APPVERSION As String = "v1.0.0 (Build 20261117)"
 	Private APPCOPYRIGHT As String = "Copyright (c) 2026 Robert W.B. Linn - MIT Licence"
 
 	' Core
@@ -41,10 +41,10 @@ Sub Class_Globals
 	Private Root As B4XView
 	Private pnToolbar As B4XView
 	Private lblToolbar As B4XView
-	Private tfCommand As B4XView
+	Private cbCommands As ComboBox
 	Private taEditor As B4XView
 	Private taOutput As B4XView
-	Private lblFile As B4XView
+	Private lblOutput As B4XView
 	Private lblEditor As B4XView
 	Private pnEditor As B4XView
 	Private pnOutput As B4XView
@@ -60,8 +60,20 @@ Sub Class_Globals
 	Private LoadingProgram As Boolean
 	Private UpdatingEditor As Boolean
 	
-	' BASIC-58 Interpreter
-	Private Basic58 As Basic58Interpreter
+	' BASIC-58 
+	' Interpreter
+	Private Interpreter As B58Interpreter
+	' Serial Communication
+	Private Serial As B58Serial
+	' System
+	Private System As B58System
+
+	' Delay command timer 1 second
+	Private DelayTimer As Timer
+	Private DELAY_INTERVAL As Long = 1000
+	
+	' Helper
+	Private bc As ByteConverter
 End Sub
 
 Public Sub Initialize
@@ -75,38 +87,50 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	DesignerUtils.Initialize
 	Root.LoadLayout("MainPage")
 
-	' Interpreter	
-	Basic58.Initialize(Me, "Interpreter")
-	' Log(GetSystemProperty("javafx.runtime.version", "unknown"))
-
+	' BASIC-58 
+	' Interpreter with event prefix Interpreter
+	Interpreter.Initialize(Me, "Interpreter")
+	' Serial communication with event prefix Serial
+	Serial.Initialize(Me, "Serial")
+	' System commands
+	System.Initialize(Me, "System")
+		
+	' BASIC-58 execution delay timer
+	DelayTimer.Initialize("DelayTimer", DELAY_INTERVAL)
+	DelayTimer.Enabled = False
+	
 	' Create BASIC58 data directory.
 	CurrentFilePath = File.DirApp
 	CurrentFileName = "PROGRAM.BAS"
 	ProgramModified = False
 	
-	' UI
+	' B4Xpages
 	B4XPages.GetNativeParent(Me).Icon = xui.LoadBitmap(File.DirAssets, "Icon.png")
 	' B4XPages.GetNativeParent(Me).Resizable = False
+
 	InitializeKeyboardShortcuts
-	' Set textareas editable state
+
+	InitializeUIStyle
+
+	' Textareas editable state
 	taEditor.As(TextArea).Editable = True
 	taOutput.As(TextArea).Editable = False
+
+	Utils.ComboBoxSetPromptText(cbCommands, "Enter BASIC command...")
+
 	' Labels
-	lblFile.Text = CurrentFileName
 	lblStatus.Text = "READY"
+
 	UpdatePageTitle
-		
-	' For tests
-'	tfCommand.Text = "LOAD"
-'	tfCommand_Action
-'	tfCommand.Text = "LIST"
-'	tfCommand_Action
-'	tfCommand.Text = "RUN"
-'	tfCommand_Action
-	
-	InitializeUIStyle
 	
 	ShowWelcomMessage
+End Sub
+
+Private Sub B4XPage_CloseRequest As ResumableSub
+	If xui.IsB4A Then
+	End If
+	Serial.Disconnect
+	Return True
 End Sub
 
 ' ----------------------------------------------------------------
@@ -116,6 +140,9 @@ End Sub
 ' InitializeUIStyle
 ' VT220 Amber
 Private Sub InitializeUIStyle
+	
+	B4XPages.GetNativeParent(Me).Stylesheets.Add(File.GetUri(File.DirAssets, "Main.css"))
+	
 	'--------------------------------------------------
 	' Main application
 	'--------------------------------------------------
@@ -123,23 +150,15 @@ Private Sub InitializeUIStyle
 	' Root.SetColorAndBorder(xui.Color_ARGB(0xFF,0xDC,0xD6,0xC8), 2, xui.Color_ARGB(0xFF,0x4A,0x48,0x45), 0)
 
 	'--------------------------------------------------
-	' Toolbar Label (aka Buttons) See Class DesignerToolbar
-	'--------------------------------------------------
-	CSSUtils.SetBackgroundColor(pnToolbar, fx.Colors.From32Bit(0xFFDCD6C8))
-	lblToolbar.Font = fx.CreateFont("Consolas", 16, True, False)
-	CSSUtils.SetStyleProperty(lblToolbar, "-fx-text-fill", "#4A4845")
-
-	'--------------------------------------------------
-	' PROGRAM & FILE
+	' Label Editor
 	'--------------------------------------------------
 	lblEditor.Font = fx.CreateFont("Consolas", 16, True, False)
 	CSSUtils.SetStyleProperty(lblEditor, "-fx-text-fill", "#4A4845")
-	lblFile.Font = fx.CreateFont("Consolas", 16, True, False)
-	CSSUtils.SetStyleProperty(lblFile, "-fx-text-fill", "#4A4845")
 
 	'--------------------------------------------------
 	' Editor Area
 	'--------------------------------------------------
+	pnEditor.SetColorAndBorder(xui.Color_ARGB(0xFF,0xDC,0xD6,0xC8), 2, xui.Color_LightGray, 5)
 	CSSUtils.SetStyleProperty(taEditor, "-fx-control-inner-background", "#191713")
 	CSSUtils.SetStyleProperty(taEditor, "-fx-text-fill", "#FFBF69")
 	CSSUtils.SetStyleProperty(taEditor, "-fx-highlight-fill", "#80613A")
@@ -147,10 +166,17 @@ Private Sub InitializeUIStyle
 	CSSUtils.SetStyleProperty(taEditor, "-fx-border-color", "#80613A")
 	CSSUtils.SetStyleProperty(taEditor, "-fx-border-width", "2")
 	taEditor.Font = fx.CreateFont("Consolas", 16, False, False)
+
+	'--------------------------------------------------
+	' Label Output
+	'--------------------------------------------------
+	lblOutput.Font = fx.CreateFont("Consolas", 14, True, False)
+	CSSUtils.SetStyleProperty(lblOutput, "-fx-text-fill", "#4A4845")
 	
 	'--------------------------------------------------
 	' Output Area
 	'--------------------------------------------------
+	pnOutput.SetColorAndBorder(xui.Color_ARGB(0xFF,0xDC,0xD6,0xC8), 2, xui.Color_LightGray, 5)
 	CSSUtils.SetStyleProperty(taOutput, "-fx-control-inner-background", "#191713")
 	CSSUtils.SetStyleProperty(taOutput, "-fx-text-fill", "#FFBF69")
 	CSSUtils.SetStyleProperty(taOutput, "-fx-highlight-fill", "#80613A")
@@ -162,18 +188,29 @@ Private Sub InitializeUIStyle
 	'--------------------------------------------------
 	' Command input
 	'--------------------------------------------------
-	CSSUtils.SetStyleProperty(tfCommand, "-fx-background-color", "#211B13")
-	CSSUtils.SetStyleProperty(tfCommand, "-fx-text-fill", "#FFBF69")
-	CSSUtils.SetStyleProperty(tfCommand, "-fx-prompt-text-fill", "#C9954A")
-	CSSUtils.SetStyleProperty(tfCommand, "-fx-border-color", "#80613A")
-	CSSUtils.SetStyleProperty(tfCommand, "-fx-border-width", "1")
-	tfCommand.Font = fx.CreateFont("Consolas", 17, False, False)
+	Dim JO As JavaObject = cbCommands
+	Dim Editor As JavaObject = JO.RunMethod("getEditor", Null)
+	Editor.RunMethod("setStyle", Array("-fx-font-family: 'Consolas'; -fx-font-size: 16px;"))	
+	
+	CSSUtils.SetStyleProperty(cbCommands, "-fx-background-color", "#211B13")
+	CSSUtils.SetStyleProperty(cbCommands, "-fx-text-fill", "#FFBF69")
+	CSSUtils.SetStyleProperty(cbCommands, "-fx-prompt-text-fill", "#C9954A")
+	CSSUtils.SetStyleProperty(cbCommands, "-fx-border-color", "#80613A")
+	CSSUtils.SetStyleProperty(cbCommands, "-fx-border-width", "1")
+
+	'--------------------------------------------------
+	' Toolbar Label (aka Buttons) See Class DesignerToolbar
+	'--------------------------------------------------
+	CSSUtils.SetBackgroundColor(pnToolbar, fx.Colors.From32Bit(0xFFDCD6C8))
+	lblToolbar.Font = fx.CreateFont("Consolas", 16, True, False)
+	CSSUtils.SetStyleProperty(lblToolbar, "-fx-text-fill", "#4A4845")
 
 	'--------------------------------------------------
 	' Status
 	'--------------------------------------------------
 	lblStatus.Font = fx.CreateFont("Consolas", 12, True, False)
 	CSSUtils.SetStyleProperty(lblStatus, "-fx-text-fill", "#4A4845")
+	CSSUtils.SetStyleProperty(lblStatus, "-fx-background-color", "#D2CDC6")
 
 End Sub
 
@@ -189,41 +226,68 @@ Private Sub InitializeKeyboardShortcuts
 End Sub
 
 Private Sub MainKeyPressed_Filter(E As Event)
-	Dim R As Reflector
-	R.Target = E
+    Dim R As Reflector
+    R.Target = E
 
-	Dim KeyCode As String = R.RunMethod("getCode")
-	Dim ControlDown As Boolean = R.RunMethod("isControlDown")
+    Dim KeyCode As String = R.RunMethod("getCode")
+    Dim ControlDown As Boolean = R.RunMethod("isControlDown")
 
-	If ControlDown Then
-		Select KeyCode
-			Case "N", "O", "S"
+    If ControlDown Then
+        Select KeyCode
+            Case "N", "O", "S"
+                R.RunMethod("consume")
+
+                Select KeyCode
+                    Case "N"
+                        NewProgram
+                    Case "O"
+                        Load
+                    Case "S"
+                        Save
+                End Select
+        End Select
+
+    Else
+        Select KeyCode
+			Case "F1"
 				R.RunMethod("consume")
+				ShowHelp
+				
+            Case "F5"
+                R.RunMethod("consume")
+                Interpreter.LoadProgram(taEditor.Text)
+                Interpreter.RunProgram
 
-				Select KeyCode
-					Case "N"
-						NewProgram
-					Case "O"
-						Load
-					Case "S"
-						Save
-				End Select
+            Case "F6"
+                R.RunMethod("consume")
+                ProcessCommand("LIST")
 
-		End Select
+            Case "F7"
+                R.RunMethod("consume")
+                Load
 
-	Else If KeyCode = "F5" Then
-		R.RunMethod("consume")
+            Case "F8"
+                R.RunMethod("consume")
+                Save
 
-		Basic58.LoadProgram(taEditor.Text)
-		Basic58.RunProgram
-	End If
+            Case "F9"
+                R.RunMethod("consume")
+                NewProgram
+
+            Case "F10"
+                R.RunMethod("consume")
+                taOutput.Text = ""
+        End Select
+    End If
 End Sub
-#end Region
+#End Region
 
 ' ----------------------------------------------------------------
-' CALLBACKS
+' INTERPRETERCALLBACKS
 ' ----------------------------------------------------------------
-
+#Region InterpreterCallbacks
+' Interpreter_Output
+' Write string with newline option to the output textarea.
 Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
 	Dim NativeTextArea As JavaObject = taOutput
 	Dim s As String = Value
@@ -236,9 +300,33 @@ Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
 	Wait For (Utils.ScrollTextToBottom(taOutput)) Complete (Success As Boolean)
 End Sub
 
+' Interpreter_Ready
+' Update label status with ready message.
 Private Sub Interpreter_Ready
 	lblStatus.Text = "READY"
 End Sub
+
+' Interpreter_WaitingForDelay
+' handling DELAY command
+Private Sub Interpreter_WaitingForDelay
+	DelayTimer.Interval = Interpreter.GetDelayMilliseconds
+	DelayTimer.Enabled = True
+End Sub
+
+Private Sub Interpreter_HardwareCommand(Command As String)
+    Serial.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_SystemCommand(Command As String)
+	System.ExecuteCommand(Command)
+End Sub
+#End Region
+
+#Region System
+Private Sub System_Output(Message As String)
+	PrintText(taOutput, Message)
+End Sub
+#End Region
 
 ' ----------------------------------------------------------------
 ' UI EVENTS
@@ -251,16 +339,20 @@ Private Sub Toolbar_Click (lbl As B4XView)
 	Dim o() As Object = lbl.Tag
 	Dim tag As String = o(2)
 	'Log($"[Toolbar_Click] tag=${tag}, text=${lbl.Text}"$)
-	Select tag.ToLowerCase
-		Case "edit"
-			taEditor.As(TextArea).Editable = Not(taEditor.As(TextArea).Editable)
-		Case "load"
-			Load
-		Case "save"
-			Save
-		Case "run"
-			Basic58.LoadProgram(taEditor.Text)
-			Basic58.RunProgram
+	Select tag.ToUppercase
+			Case "RUN"
+				Interpreter.LoadProgram(taEditor.Text)
+				Interpreter.RunProgram
+			Case "LIST"
+				ProcessCommand("LIST")
+			Case "LOAD"
+				Load
+			Case "SAVE"
+				Save
+			Case "NEW"
+				NewProgram
+			Case "CLS"
+				taOutput.Text = ""
 	End Select
 	'B4XPages.SetTitle(Me, tag)
 End Sub
@@ -301,8 +393,33 @@ Private Sub taOutput_MouseClicked (EventData As MouseEvent)
 	End If
 End Sub
 
-Private Sub tfCommand_Action
+Private Sub cbCommands_ValueChanged (Value As Object)
+	If Value.As(String).Length = 0 Then Return
+	' Log($"[cbCommands_ValueChanged] ${Value}"$)
 	ProcessInput
+End Sub
+
+' No action because handled by processinput
+Private Sub cbCommands_SelectedIndexChanged(Index As Int, Value As Object)
+	' Log($"[cbCommands_SelectedIndexChanged] ${Value}"$)
+End Sub
+
+Private Sub AddCommandToHistory(Command As String)
+
+    Dim Items As List = cbCommands.Items
+
+    ' Avoid consecutive duplicates
+    If Items.Size > 0 Then
+        If Items.Get(Items.Size - 1) = Command Then Return
+    End If
+
+    Items.Add(Command)
+
+    ' Limit history to 50 commands
+    Do While Items.Size > 50
+        Items.RemoveAt(0)
+    Loop
+
 End Sub
 #End Region
 
@@ -314,6 +431,9 @@ Private Sub ProcessCommand(Command As String)
 	Dim UpperCommand As String = Command.Trim.ToUpperCase
 
 	Select Case True
+		Case UpperCommand = "HELP"
+			ShowHelp
+			
 		Case UpperCommand = "SAVE" Or UpperCommand.StartsWith("SAVE ")
 			SaveProgram(Command.SubString(4).Trim, CurrentFilePath)
 
@@ -329,44 +449,48 @@ Private Sub ProcessCommand(Command As String)
 			NewProgram
 
 		Case UpperCommand = "RUN"
-			Basic58.LoadProgram(taEditor.Text)
-			Basic58.RunProgram
+			Interpreter.LoadProgram(taEditor.Text)
+			Interpreter.RunProgram
 			
-		Case UpperCommand = "EASTER"
+		Case UpperCommand = "BASIC-58"
 			ShowEasterEgg
+
+		Case UpperCommand.StartsWith("@SYS")
+			System.ExecuteCommand(Command.Substring(4).Trim)
+
+		Case UpperCommand.StartsWith("@SER")
+			Serial.ExecuteCommand(Command)
+
+		Case UpperCommand.StartsWith("@")
+			PrintText(taOutput, "[BASIC-58][E] Unknown command.")
 			
 		Case Else
-			Basic58.ExecuteCommand(Command)
+			Interpreter.ExecuteCommand(Command)
 	End Select
 End Sub
 
 Private Sub ProcessInput
 
-	Dim Command As String = tfCommand.Text.Trim
+	Dim Command As String = cbCommands.Value.As(String).Trim
 
-	If Command = "" And Basic58.IsWaitingForInput = False Then Return
+	If Command = "" And Interpreter.IsWaitingForInput = False Then Return
 
-	tfCommand.Text = ""
+	cbCommands.Value = ""
 
-	If Basic58.IsWaitingForInput Then
-		Basic58.SubmitInput(Command)
+	If Interpreter.IsWaitingForInput Then
+		Interpreter.SubmitInput(Command)
 	Else
+		AddCommandToHistory(Command)
 		ProcessCommand(Command)
 	End If
 
 End Sub
 #End Region
 
-Private Sub PrintText(Target As B4XView, Value As String)
-	Dim NativeTextArea As JavaObject = Target
-	NativeTextArea.RunMethod("appendText", Array(Value & CRLF))
-	NativeTextArea.RunMethod("positionCaret", Array(NativeTextArea.RunMethod("getLength", Null)))
-
-	If Target.Tag = taOutput.Tag Then
-		Wait For (Utils.ScrollTextToBottom(taOutput)) Complete (Success As Boolean)
-	End If
-End Sub
-
+' ----------------------------------------------------------------
+' FILE MANAGEMENT
+' ----------------------------------------------------------------
+#Region FileManagement
 Private Sub NewProgram
 	If ProgramModified Then
 		Wait For (ConfirmDiscardChanges) Complete (Confirmed As Boolean)
@@ -379,25 +503,23 @@ Private Sub NewProgram
 	LoadingProgram = False
 
 	' Clear interpreter and output.
-	Basic58.ClearProgram
+	Interpreter.ClearProgram
 	taOutput.Text = ""
 
 	' Reset program information.
 	CurrentFileName = "PROGRAM.BAS"
-	lblFile.Text = CurrentFileName
 	ProgramModified = False
-
 	UpdatePageTitle
 	lblStatus.Text = "READY"
 End Sub
         
 Private Sub SaveProgram(FileName As String, FilePath As String) As Boolean
-	Basic58.LoadProgram(taEditor.Text)
+	Interpreter.LoadProgram(taEditor.Text)
 
 	'Log("EDITOR TEXT: " & taEditor.Text)
 	'Log("PROGRAM LINES: " & ProgramLines.Size)
 
-	If Basic58.GetProgramLineCount = 0 Then
+	If Interpreter.GetProgramLineCount = 0 Then
 		PrintText(taOutput, "NO PROGRAM")
 		Return False
 	End If
@@ -440,7 +562,6 @@ Private Sub SaveProgram(FileName As String, FilePath As String) As Boolean
 		
 		CurrentFilePath = FilePath
 		CurrentFileName = FileName
-		lblFile.Text = CurrentFileName
 		ProgramModified = False
 		UpdatePageTitle
 
@@ -509,16 +630,14 @@ Private Sub LoadProgram(FileName As String)
 		End If
 		
 		'Rebuild the interpreter program.
-		Basic58.LoadProgram(taEditor.Text)
+		Interpreter.LoadProgram(taEditor.Text)
 
 		CurrentFileName = FileName.ToUpperCase
-		lblFile.Text = CurrentFileName
-
 		ProgramModified = False
 		UpdatePageTitle
 
 		PrintText(taOutput, "LOADED: " & CurrentFileName)
-		PrintText(taOutput, "LINES: " & Basic58.GetProgramLineCount)
+		PrintText(taOutput, "LINES: " & Interpreter.GetProgramLineCount)
 	Catch
 		LoadingProgram = False
 		PrintText(taOutput, "?LOAD ERROR")
@@ -542,7 +661,6 @@ Private Sub Load
 	Try
 		CurrentFileName = Utils.GetFileName(Filename).ToUpperCase
 		CurrentFilePath = Utils.GetFilePath(Filename)
-		lblFile.Text = CurrentFileName
 		'Log($"[Load] path=${CurrentFilePath}, file=${CurrentFileName}"$)
 		LoadProgram(CurrentFileName)
 	Catch
@@ -551,7 +669,7 @@ Private Sub Load
 	Return
 End Sub
 
-'# Save Content TextArea To a TextFile
+' Save Content TextArea To a TextFile
 ' Dim Str As String = "Hello World"
 ' StringToTextFile(MainForm, Str)
 Private Sub Save
@@ -576,18 +694,8 @@ Private Sub Save
 	End Try
 End Sub
 
-Private Sub UpdatePageTitle
-	Dim PageTitle As String = $"${APPNAME} - ${CurrentFileName}"$
-
-	If ProgramModified Then
-		PageTitle = PageTitle & " *"
-	End If
-
-	B4XPages.SetTitle(Me, PageTitle)
-End Sub
-
 Private Sub ConfirmDiscardChanges As ResumableSub
-	Log($"[ConfirmDiscardChanges] ProgramModified=${ProgramModified}"$)
+	' Log($"[ConfirmDiscardChanges] ProgramModified=${ProgramModified}"$)
 
 	If ProgramModified = False Then Return True
 
@@ -597,20 +705,101 @@ Private Sub ConfirmDiscardChanges As ResumableSub
 
 	Return Result = xui.DialogResponse_Positive
 End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' PRINT & OUTPUT
+' ----------------------------------------------------------------
+#Region PrintAndOutput
+Private Sub PrintText(Target As B4XView, Value As String)
+	Dim NativeTextArea As JavaObject = Target
+	NativeTextArea.RunMethod("appendText", Array(Value & CRLF))
+	NativeTextArea.RunMethod("positionCaret", Array(NativeTextArea.RunMethod("getLength", Null)))
+
+	If Target.Tag = taOutput.Tag Then
+		Wait For (Utils.ScrollTextToBottom(taOutput)) Complete (Success As Boolean)
+	End If
+End Sub
+
+Private Sub UpdatePageTitle
+	Dim PageTitle As String = $"${APPNAME} - ${CurrentFileName}"$
+
+	If ProgramModified Then
+		PageTitle = PageTitle & " *"
+	End If
+
+	B4XPages.SetTitle(Me, PageTitle)
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' SERIAL COMMUNICATION CALLBACKS
+' ----------------------------------------------------------------
+#Region B58SerialCALLBACKS
+Private Sub Serial_Connected
+	PrintText(taOutput, "[BASIC-58] Controller connected.")
+	Sleep(2000) ' Allow Arduino UNO reset
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_CommandCompleted(Frame() As Byte)
+	PrintText(taOutput, $"[BASIC-58] ACK received: ${bc.HexFromBytes(Frame)}"$)
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_CommandError(Message As String)
+	PrintText(taOutput, "[BASIC-58][E] " & Message)
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_Disconnected
+	PrintText(taOutput, "[BASIC-58] Controller disconnected.")
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_Error(Message As String)
+	PrintText(taOutput, "[BASIC-58][E] " & Message)
+End Sub
+
+Private Sub Serial_PortsFound(Ports As List)
+	PrintText(taOutput, "AVAILABLE SERIAL PORTS:")
+	For Each Port As String In Ports
+		PrintText(taOutput, Port)
+	Next
+End Sub
+
+Private Sub Serial_NoPortsFound
+	PrintText(taOutput, "NO SERIAL PORTS FOUND.")
+End Sub
+#End Region
+
+#Region Delay
+Private Sub DelayTimer_Tick
+	DelayTimer.Enabled = False
+	Interpreter.ResumeProgram
+End Sub
+#End Region
 
 ' ----------------------------------------------------------------
 ' MESSAGES OUTPUT TERMINAL
 ' ----------------------------------------------------------------
-
+#Region Messages
 Private Sub ShowWelcomMessage
 	taOutput.Text = ""
-	PrintText(taOutput, "**** BASIC-58 ****")
-	PrintText(taOutput, "BASIC INTERPRETER")
-	PrintText(taOutput, "TYPE HELP FOR COMMANDS")
-	PrintText(taOutput, "----------------------")
-	PrintText(taOutput, APPVERSION)
+
+	PrintText(taOutput, "BASIC-58  BASIC INTERPRETER")
+	PrintText(taOutput, "VERSION " & APPVERSION)
 	PrintText(taOutput, APPCOPYRIGHT)
+	PrintText(taOutput, "---------------------------")
+	PrintText(taOutput, "TYPE HELP FOR COMMANDS")
+	PrintText(taOutput, "READY.")
+	Wait For (Utils.ScrollTextToTop(taOutput)) Complete (Success As Boolean)
 	lblStatus.Text = "READY"
+End Sub
+
+Private Sub ShowHelp
+	taOutput.Text = File.ReadString(File.DirAssets, "Help.txt")
+	lblStatus.Text = "HELP"
 End Sub
 
 Private Sub ShowEasterEgg
@@ -628,5 +817,7 @@ Private Sub ShowEasterEgg
 	PrintText(taOutput, "")
 	PrintText(taOutput, "              :-)")
 	PrintText(taOutput, "================================")
+	Wait For (Utils.ScrollTextToTop(taOutput)) Complete (Success As Boolean)
 	lblStatus.Text = "ENJOY BASIC-58"
 End Sub
+#End Region

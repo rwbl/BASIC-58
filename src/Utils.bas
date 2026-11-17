@@ -5,6 +5,9 @@ Type=StaticCode
 Version=10.7
 @EndOfDesignText@
 'Static code module
+
+' Log(GetSystemProperty("javafx.runtime.version", "unknown"))
+
 Sub Process_Globals
 	Private fx As JFX
 End Sub
@@ -55,6 +58,16 @@ Public Sub ScrollTextToBottom(Target As B4XView) As ResumableSub
 	Return True
 End Sub
 
+Public Sub ScrollTextToTop(Target As B4XView) As ResumableSub
+	Sleep(50)
+
+	Dim NativeTextArea As JavaObject = Target
+	NativeTextArea.RunMethod("setScrollTop", Array(0.0))
+
+	Return True
+End Sub
+
+
 Public Sub ConvertBasicTextToUpper(Source As String) As String
 	Dim Result As StringBuilder
 	Result.Initialize
@@ -75,4 +88,9 @@ Public Sub ConvertBasicTextToUpper(Source As String) As String
 	Next
 
 	Return Result.ToString
+End Sub
+
+Public Sub ComboBoxSetPromptText(box As ComboBox, text As String)
+	Dim joCB As JavaObject = box
+	joCB.RunMethod("setPromptText", Array(text))
 End Sub
