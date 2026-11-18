@@ -52,7 +52,9 @@ BASIC-58 is itself written in BASIC — specifically, B4J.
 - Arithmetic expressions and operator precedence.
 - String expressions and functions.
 - `LET` assignments.
-- `INPUT` and `PRINT`.
+- `INPUT` for interactive keyboard input.
+- `ASSIGN` for external numeric data acquisition.
+- `PRINT`.
 - `IF ... THEN` conditional branching.
 - `GOTO` and `GOSUB`.
 - `RETURN`.
@@ -150,12 +152,29 @@ The following commands are available in the BASIC-58 environment.
 | `RENUM new-start` | Renumber the program from the specified starting line, using increments of 10. |
 | `RENUM new-start, increment` | Renumber the program using the specified starting line and increment. |
 
-Immediate expressions can also be evaluated directly:
+### Immediate Expressions 
+These can also be evaluated directly:
 
 ```basic
 PRINT 10 + 20
 PRINT "HELLO"
 ```
+
+### RENUM
+
+Renumbers the current program.
+
+Line references in `GOTO`, `GOSUB` and `IF ... THEN` statements
+are updated automatically.
+
+Examples:
+
+```basic
+RENUM
+RENUM 100
+RENUM 100,5
+```
+Numeric and string data are supported.
 
 ---
 
@@ -399,7 +418,7 @@ Loop variables must be single letters from A to Z.
 
 ---
 
-### INPUT and PRINT
+### INPUT, ASSIGN and PRINT
 
 `INPUT` reads values from the user.
 
@@ -435,6 +454,32 @@ Example:
 80 END
 ```
 
+`ASSIGN` receives numeric data from an external device through
+the serial interface.
+
+Unlike `INPUT`, which waits for keyboard input, `ASSIGN` waits
+for the next incoming external numeric value.
+
+Values can be assigned to numeric variables or array elements.
+
+Example:
+
+```basic
+10 @SER CONNECT COM10
+20 DIM TEMP(5)
+30 FOR I = 1 TO 5
+40 ASSIGN TEMP(I)
+50 PRINT "TEMPERATURE: "; TEMP(I)
+60 NEXT I
+70 @SER DISCONNECT
+80 END
+```
+If the serial connection is lost while ASSIGN is waiting,
+program execution stops with:
+```
+?SERIAL CONNECTION LOST
+```
+
 ---
 
 ### DATA, READ and RESTORE
@@ -459,21 +504,34 @@ Example:
 
 ---
 
-### RENUM
+## Arrays
 
-Renumbers the current program.
+BASIC-58 supports one-dimensional numeric arrays.
 
-Line references in `GOTO`, `GOSUB` and `IF ... THEN` statements
-are updated automatically.
+Arrays must be declared using `DIM` before they can be used.
 
-Examples:
+Array indices start at 1.
+
+Example:
 
 ```basic
-RENUM
-RENUM 100
-RENUM 100,5
+10 DIM TEMPERATURE(10)
+20 LET TEMPERATURE(1) = 21.5
+30 LET TEMPERATURE(2) = 22.0
+40 PRINT TEMPERATURE(1)
+50 PRINT UBOUND(TEMPERATURE)
+60 END
 ```
-Numeric and string data are supported.
+
+Array commands and functions
+- DIM array(size) declares an array.
+- ERASE array removes an array from memory.
+- UBOUND(array) returns the highest valid array index.
+- SWAP variable1, variable2 exchanges two numeric values.
+SWAP supports numeric variables, array elements, and combinations
+of numeric variables and array elements.
+
+Arrays are initialized with zero values when declared.
 
 ---
 
@@ -634,20 +692,51 @@ Its simple structure makes it possible to communicate with different devices and
 @SER LISTPORTS
 @SER LED adr ON
 @SER LED adr OFF
-```markdown
+```
 
 These commands provide serial connection management and basic hardware control.
 
+### External data acquisition
+
+BASIC-58 can receive numeric values from external devices.
+
+The `ASSIGN` statement waits for the next incoming serial value
+and assigns it to a numeric variable or array element.
+
+Example:
+
+```basic
+10 @SER CONNECT COM10
+20 DIM TEMPERATURE(10)
+30 FOR I = 1 TO 10
+40 ASSIGN TEMPERATURE(I)
+50 NEXT I
+60 LET TOTAL = 0
+70 FOR I = 1 TO 10
+80 LET TOTAL = TOTAL + TEMPERATURE(I)
+90 NEXT I
+100 PRINT "AVERAGE: "; TOTAL / 10
+110 @SER DISCONNECT
+120 END
+```
+
+This example collects ten temperature readings and calculates
+their average.
+
+If the serial connection is lost while waiting for external
+data, BASIC-58 reports ?SERIAL CONNECTION LOST and stops
+program execution.
+
 ### Communication protocol
 The protocol uses five bytes per message:
-```markdown
+```
 Byte	Description
 1	Header
 2	Device address
 3	Command
 4	Value
 5	Footer
-```markdown
+```
 
 Communication is bi-directional. BASIC-58 can send commands to an external device and receive responses or acknowledgements.
 
@@ -774,6 +863,9 @@ Additional language tests cover:
 - Function parameter isolation.
 - Function definition and redefinition.
 - Function argument and expression error handling.
+- External serial data acquisition using `ASSIGN`.
+- `ASSIGN` with numeric array elements.
+- Serial disconnection handling during data acquisition.
 
 ---
 

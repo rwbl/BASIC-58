@@ -167,6 +167,7 @@ Private Sub AStreams_NewData(Buffer() As Byte)
 End Sub
 
 Private Sub ProcessIncomingFrame(Frame() As Byte)
+
 	If B58Protocol.CheckFrame(Frame) = False Then Return
 
 	Dim Adr As Byte = B58Protocol.GetAdr(Frame)
@@ -175,13 +176,15 @@ Private Sub ProcessIncomingFrame(Frame() As Byte)
 
 	Log($"[B58Serial.Frame] ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
 
+	'No command pending: deliver incoming data.
 	If PendingCommand = False Then
-		Log("[B58Serial.Frame] Unexpected response.")
+		CallSub2(mCallback, mEventName & "_DataReceived", Frame)
 		Return
 	End If
 
+	'Check whether this is the expected response.
 	If Adr <> PendingAdr Or Cmd <> PendingCmd Then
-		Log("[B58Serial.Frame] Response does not match pending command.")
+		CallSub2(mCallback, mEventName & "_DataReceived", Frame)
 		Return
 	End If
 
@@ -198,8 +201,9 @@ Private Sub ProcessIncomingFrame(Frame() As Byte)
 		Return
 	End If
 
-	' Successful acknowledgement.
+	'Successful acknowledgement.
 	CallSub2(mCallback, mEventName & "_CommandCompleted", Frame)
+
 End Sub
 
 Private Sub AStreams_Error

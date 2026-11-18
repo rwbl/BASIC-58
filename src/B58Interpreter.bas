@@ -63,6 +63,10 @@ Private Sub Class_Globals
 	Private DataItems As List
 	Private DataPosition As Int
 	Private DataErrorLine As Int
+
+	' ASSIGN External data assignment
+	Private WaitingForExternalData As Boolean
+	Private ExternalDataTarget As String
 	
 	' Error handling
 	Private ErrorHandlerLine As Int
@@ -472,8 +476,6 @@ Private Sub ExecuteLet(LineCode As String) As Boolean
 
 	End If
 
-
-
 	If IsValidVariable(VariableName) = False Then Return False
 
 	'String variable.
@@ -757,7 +759,6 @@ Private Sub ContinueProgram
 				End If
 				
 			Case UpperLine = "RESTORE"
-
 				If ExecuteRestore(LineCode) = False Then
 					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
 					Exit
@@ -944,8 +945,14 @@ Private Sub ContinueProgram
 					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
 					Exit
 				End If
-
 				WaitingForInput = True
+				Return
+
+			Case UpperLine.StartsWith("ASSIGN ")
+				If ExecuteAssign(LineCode) = False Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
 				Return
 
 			Case UpperLine.StartsWith("DIM ")
@@ -953,7 +960,19 @@ Private Sub ContinueProgram
 					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
 					Exit
 				End If
-				
+
+			Case UpperLine = "ERASE" Or UpperLine.StartsWith("ERASE ")
+				If ExecuteErase(LineCode) = False Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
+			Case UpperLine = "SWAP" Or UpperLine.StartsWith("SWAP ")
+				If ExecuteSwap(LineCode) = False Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
 			Case UpperLine.StartsWith("LET ")
 				If ExecuteLet(LineCode) = False Then
 
@@ -1670,6 +1689,50 @@ Private Sub ParseFactor As Double
 				End If
 
 				Return ArrayValue
+
+			End If
+
+			'UBOUND function.
+			If Name = "UBOUND" Then
+
+				SkipSpaces
+
+				If ExprPos >= ExprText.Length Then
+					ExprError = True
+					Return 0
+				End If
+
+				Dim ArrayName As String = ""
+
+				'Read the array name.
+				Do While ExprPos < ExprText.Length
+
+					Dim c As String = ExprText.SubString2(ExprPos, ExprPos + 1)
+
+					If c = ")" Then Exit
+
+					ArrayName = ArrayName & c
+					ExprPos = ExprPos + 1
+
+				Loop
+
+				ArrayName = ArrayName.Trim
+
+				If ExprPos >= ExprText.Length Then
+					ExprError = True
+					Return 0
+				End If
+
+				ExprPos = ExprPos + 1
+
+				If Arrays.ContainsKey(ArrayName) = False Then
+					ExprError = True
+					Return 0
+				End If
+
+				Dim Values As List = Arrays.Get(ArrayName)
+
+				Return Values.Size
 
 			End If
 
@@ -3096,6 +3159,17 @@ Public Sub ResumeHardwareCommand
 	WaitingForHardwareCommand = False
 	ContinueProgram
 End Sub
+
+Public Sub ExternalDataDisconnected
+
+    If WaitingForExternalData = False Then Return
+
+    WaitingForExternalData = False
+    ExternalDataTarget = ""
+
+    HandleProgramError("?SERIAL CONNECTION LOST")
+
+End Sub
 #End Region
 
 #Region B58System
@@ -3319,6 +3393,166 @@ Private Sub ExecuteDim(LineCode As String) As Boolean
 	Return True
 
 End Sub
+
+'Remove an array from memory.
+Private Sub ExecuteErase(LineCode As String) As Boolean
+
+	Dim Statement As String = LineCode.Trim.ToUpperCase
+
+	If Statement.StartsWith("ERASE ") = False Then Return False
+
+	Dim ArrayName As String = Statement.SubString(6).Trim
+
+	'Validate array name.
+	If IsValidVariable(ArrayName) = False Then Return False
+	If ArrayName.EndsWith("$") Then Return False
+
+	'Check whether the array exists.
+	If Arrays.ContainsKey(ArrayName) = False Then Return False
+
+	'Remove the array.
+	Arrays.Remove(ArrayName)
+
+	Return True
+
+End Sub
+
+'Exchange two numeric variables or array elements.
+Private Sub ExecuteSwap(LineCode As String) As Boolean
+
+	Dim Statement As String = LineCode.Trim.ToUpperCase
+
+	If Statement.StartsWith("SWAP ") = False Then Return False
+
+	Dim Arguments As String = Statement.SubString(5).Trim
+
+	'Find the comma separating the two arguments.
+	Dim CommaPos As Int = Arguments.IndexOf(",")
+
+	If CommaPos <= 0 Then Return False
+
+	Dim LeftTarget As String = Arguments.SubString2(0, CommaPos).Trim
+	Dim RightTarget As String = Arguments.SubString(CommaPos + 1).Trim
+
+	If LeftTarget = "" Or RightTarget = "" Then Return False
+
+	If LeftTarget = RightTarget Then Return False
+
+	'Read both values.
+	Dim LeftValue As String = GetNumericTargetValue(LeftTarget)
+
+	If ExprError Then Return False
+
+	Dim RightValue As String = GetNumericTargetValue(RightTarget)
+
+	If ExprError Then Return False
+
+	'Write the exchanged values.
+	If SetNumericTargetValue(LeftTarget, RightValue) = False Then Return False
+	If SetNumericTargetValue(RightTarget, LeftValue) = False Then Return False
+
+	Return True
+
+End Sub
+
+'Write a numeric variable or array element.
+Private Sub SetNumericTargetValue(Target As String, Value As String) As Boolean
+
+	Dim OpenPos As Int = Target.IndexOf("(")
+	Dim ClosePos As Int = Target.IndexOf(")")
+
+	If OpenPos > 0 And ClosePos > OpenPos Then
+
+		Dim ArrayName As String = Target.SubString2(0, OpenPos).Trim
+		Dim IndexText As String = Target.SubString2(OpenPos + 1, ClosePos).Trim
+
+		If IsValidVariable(ArrayName) = False Then Return False
+		If Arrays.ContainsKey(ArrayName) = False Then Return False
+
+		Dim IndexValue As Double = EvaluateNumericExpression(IndexText)
+
+		If ExprError Then Return False
+		If IndexValue < 1 Or IndexValue <> Floor(IndexValue) Then Return False
+
+		Dim Values As List = Arrays.Get(ArrayName)
+
+		If IndexValue > Values.Size Then Return False
+
+		Values.Set(IndexValue - 1, Value)
+
+		Return True
+
+	End If
+
+	If IsValidVariable(Target) = False Or Target.EndsWith("$") Then Return False
+
+	Variables.Put(Target, Value)
+
+	Return True
+
+End Sub
+
+'Read a numeric variable or array element.
+Private Sub GetNumericTargetValue(Target As String) As String
+
+	ExprError = False
+
+	Dim OpenPos As Int = Target.IndexOf("(")
+	Dim ClosePos As Int = Target.IndexOf(")")
+
+	If OpenPos > 0 And ClosePos > OpenPos Then
+
+		Dim ArrayName As String = Target.SubString2(0, OpenPos).Trim
+		Dim IndexText As String = Target.SubString2(OpenPos + 1, ClosePos).Trim
+
+		If IsValidVariable(ArrayName) = False Then
+			ExprError = True
+			Return "0"
+		End If
+
+		If Arrays.ContainsKey(ArrayName) = False Then
+			ExprError = True
+			Return "0"
+		End If
+
+		Dim IndexValue As Double = EvaluateNumericExpression(IndexText)
+
+		If ExprError Or IndexValue < 1 Or IndexValue <> Floor(IndexValue) Then
+			ExprError = True
+			Return "0"
+		End If
+
+		Dim Values As List = Arrays.Get(ArrayName)
+
+		If IndexValue > Values.Size Then
+			ExprError = True
+			Return "0"
+		End If
+
+		Return Values.Get(IndexValue - 1)
+
+	End If
+
+	If IsValidVariable(Target) = False Or Target.EndsWith("$") Then
+		ExprError = True
+		Return "0"
+	End If
+
+	If Variables.ContainsKey(Target) = False Then
+		ExprError = True
+		Return "0"
+	End If
+
+	Dim Value As String = Variables.Get(Target)
+
+	If IsNumber(Value) = False Then
+		ExprError = True
+		Return "0"
+	End If
+
+	Return Value
+
+End Sub
 #End Region
 
 #Region Renumber
@@ -3497,6 +3731,85 @@ Private Sub UpdateLineReference(LineCode As String, Command As String, LineNumbe
 	Else
 		Return Command & " " & NewTargetLine
 	End If
+
+End Sub
+#End Region
+
+#Region Assign
+Private Sub ExecuteAssign(LineCode As String) As Boolean
+
+	Dim Statement As String = LineCode.Trim
+
+	If Statement.Length < 7 Then Return False
+
+	If Statement.SubString2(0, 6).ToUpperCase <> "ASSIGN" Then Return False
+
+	Dim Target As String = Statement.SubString(6).Trim.ToUpperCase
+
+	If Target = "" Then Return False
+
+	'Array element.
+	Dim OpenPos As Int = Target.IndexOf("(")
+	Dim ClosePos As Int = Target.IndexOf(")")
+
+	If OpenPos > 0 And ClosePos = Target.Length - 1 Then
+
+		Dim ArrayName As String = Target.SubString2(0, OpenPos).Trim
+		Dim IndexText As String = Target.SubString2(OpenPos + 1, ClosePos).Trim
+
+		If IsValidVariable(ArrayName) = False Then Return False
+		If ArrayName.EndsWith("$") Then Return False
+		If Arrays.ContainsKey(ArrayName) = False Then Return False
+		If IndexText = "" Then Return False
+
+		Dim IndexValue As Double = EvaluateNumericExpression(IndexText)
+
+		If ExprError Then Return False
+		If IndexValue < 1 Or IndexValue <> Floor(IndexValue) Then Return False
+
+		Dim Values As List = Arrays.Get(ArrayName)
+		If IndexValue > Values.Size Then Return False
+
+	Else
+		If IsValidVariable(Target) = False Then Return False
+		If Target.EndsWith("$") Then Return False
+	End If
+
+	ExternalDataTarget = Target
+	WaitingForExternalData = True
+
+	Return True
+
+End Sub
+#End Region
+
+#Region ExternalData
+'Submit an external numeric value to an active ASSIGN statement.
+Public Sub SubmitExternalData(Value As String)
+
+	If WaitingForExternalData = False Then Return
+
+	Dim Target As String = ExternalDataTarget
+
+	WaitingForExternalData = False
+	ExternalDataTarget = ""
+
+	If ExecuteLet("LET " & Target & " = " & Value) = False Then
+
+		If ExprError Then
+			If ExprErrorCode = 11 Then
+				HandleProgramError("?DIVISION BY ZERO")
+			Else
+				HandleProgramError("?ILLEGAL EXPRESSION")
+			End If
+		Else
+			HandleProgramError("?SYNTAX ERROR")
+		End If
+
+		Return
+	End If
+
+	ContinueProgram
 
 End Sub
 #End Region

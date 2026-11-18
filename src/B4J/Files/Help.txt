@@ -1,3 +1,4 @@
+
 BASIC-58 :: HELP
 ==================================================
 
@@ -6,24 +7,58 @@ BASIC-58 :: HELP
 Commands entered directly at the BASIC prompt.
 
   HELP              Display this help
-  LIST              List the current program
+  LIST [start-line [, end-line]]
+                    List the program or a selected range of lines
   RUN               Run the current program
   NEW               Create a new BASIC program
   LOAD [filename]   Load a program
   SAVE [filename]   Save a program
   CLS               Clear the terminal
   PRINT expression  Evaluate and print an expression
+  BYE               Close BASIC-58 and return to the desktop
 
+2. PROGRAM LINE NUMBERS
 
-2. PROGRAM STATEMENTS
+  Program lines can be entered with or without line numbers.
+  Unnumbered lines are automatically numbered starting at 10,
+  in increments of 10.
+  Explicit line numbers are preserved.
+  LIST displays program lines in ascending line-number order.
+  RENUM renumbers the entire program and updates line references.
+
+3. KEYBOARD SHORTCUTS
+
+  Key     Action
+  F4      RENUM
+  F5      RUN
+  F6      LIST
+  F7      LOAD
+  F8      SAVE
+  F9      NEW
+  F10     CLS
+
+4. PROGRAM STATEMENTS
 
 Program statements are entered with a line number.
 
   LET variable = expression
       Assign a numeric or string value
 
+  DIM arrayname(size)
+      Declare a one-dimensional numeric array
+
+  ERASE arrayname
+      Remove an array from memory
+
+  SWAP variable1, variable2
+      Exchange two numeric variable or array element values
+
   INPUT [prompt;] variables
-      Read values from the terminal
+      Read values from the keyboard
+
+  ASSIGN variable
+      Wait for external numeric data and assign it to a variable
+      or numeric array element
 
   PRINT expressions
       Display values and text
@@ -71,7 +106,7 @@ Program statements are entered with a line number.
       End program execution
 
 
-3. USER-DEFINED FUNCTIONS
+5. USER-DEFINED FUNCTIONS
 
 Define your own numeric functions.
 
@@ -94,56 +129,124 @@ Notes:
   - A new definition replaces an existing definition.
 
 
-4. NUMERIC FUNCTIONS
+6. NUMERIC ARRAYS
 
-  ABS(x)       Absolute value
-  INT(x)       Integer part
-  SGN(x)       Sign of a number
-  SQR(x)       Square root
+Declare a one-dimensional numeric array using DIM.
 
-  SIN(x)       Sine
-  COS(x)       Cosine
-  TAN(x)       Tangent
+  DIM arrayname(size)
 
-  LOG(x)       Natural logarithm
-  EXP(x)       Exponential
-  RND(x)       Random number
+Example:
+
+  10 DIM A(10)
+
+This creates an array with exactly 10 elements.
+
+Array indexing starts at 1.
+
+  A(1)       First element
+  A(10)      Last element
+
+All elements are initialized to zero.
+
+Assign values to array elements using LET:
+
+  10 DIM A(5)
+  20 LET A(1) = 100
+  30 LET A(2) = 200
+
+Read array elements in expressions:
+
+  40 PRINT A(1)
+  50 LET B = A(1) + A(2)
+
+Array indices can be variables or numeric expressions:
+
+  10 DIM A(10)
+  20 FOR I = 1 TO 10
+  30 LET A(I) = I * I
+  40 NEXT I
+
+Array commands and functions:
+
+  ERASE A
+      Remove array A from memory
+
+  UBOUND(A)
+      Return the upper array index (number of elements)
+
+  SWAP A(1), A(2)
+      Exchange two array elements
+
+  SWAP A(1), B
+      Exchange an array element and a numeric variable
+
+Notes:
+  - Array indices start at 1.
+  - Index 0 is not valid.
+  - Indices must be integer values.
+  - Access outside the declared range causes an error.
+  - Arrays must be declared before use.
+  - An array cannot be declared twice while it exists.
+  - ERASE allows an array to be declared again.
+  - Arrays are cleared by RUN and NEW.
+  - Only one-dimensional numeric arrays are supported.
+  - String arrays and multidimensional arrays are not supported.
+  - ERASE removes a declared array from memory.
+  - UBOUND(array) returns the number of elements in an array.
 
 
-5. STRING AND CONVERSION FUNCTIONS
+7. NUMERIC FUNCTIONS
 
-  LEN(s)       String length
-  LEFT$(s,n)   Leftmost n characters
-  RIGHT$(s,n)  Rightmost n characters
-  MID$(s,p,n)  Extract part of a string
+  ABS(x)        Absolute value
+  INT(x)        Integer part
+  SGN(x)        Sign of a number
+  SQR(x)        Square root
 
-  STR$(x)      Convert number to string
-  VAL(s)       Convert string to number
-  ASC(s)       Character code
-  CHR$(n)      Character from code
+  SIN(x)        Sine
+  COS(x)        Cosine
+  TAN(x)        Tangent
 
-  SPACE$(n)    String of spaces
-  STRING$(n,c) Repeated character
+  LOG(x)        Natural logarithm
+  EXP(x)        Exponential
+  RND(x)        Random number
 
-  UCASE$(s)    Convert to uppercase
-  LCASE$(s)    Convert to lowercase
-  LTRIM$(s)    Remove leading spaces
-  RTRIM$(s)    Remove trailing spaces
-  TRIM$(s)     Remove leading and trailing spaces
-
-  INSTR(s,t)   Find a substring
+  UBOUND(array) Return the upper array index
 
 
-6. PRINT FORMATTING
+8. STRING AND CONVERSION FUNCTIONS
 
-  TAB(n)       Move to column n
-  SPC(n)       Print n spaces
+  LEN(s)        String length
+  LEFT$(s,n)    Leftmost n characters
+  RIGHT$(s,n)   Rightmost n characters
+  MID$(s,p,n)   Extract part of a string
 
-  ;            Separate items without advancing
-  ,            Advance to the next print zone
+  STR$(x)       Convert number to string
+  VAL(s)        Convert string to number
+  ASC(s)        Character code
+  CHR$(n)       Character from code
+
+  SPACE$(n)     String of spaces
+  STRING$(n,c)  Repeated character
+
+  UCASE$(s)     Convert to uppercase
+  LCASE$(s)     Convert to lowercase
+  LTRIM$(s)     Remove leading spaces
+  RTRIM$(s)     Remove trailing spaces
+  TRIM$(s)      Remove leading and trailing spaces
+
+  INSTR(s,t)    Find a substring
 
 
-7. ERROR HANDLING
+9. PRINT FORMATTING
+
+  TAB(n)        Move to column n
+  SPC(n)        Print n spaces
+
+  ;             Separate items without advancing
+  ,             Advance to the next print zone
+
+
+10. ERROR HANDLING
 
   ON ERROR GOTO line
       Enable error handling at the specified line
@@ -164,7 +267,7 @@ Notes:
       Line number where the error occurred
 
 
-8. SYSTEM COMMANDS
+11. SYSTEM COMMANDS
 
   @SYS SHOW TIME
       Display system time
@@ -173,13 +276,13 @@ Notes:
       Display system date
 
 
-9. EXECUTION COMMANDS
+12. EXECUTION COMMANDS
 
   @DELAY milliseconds
       Pause program execution asynchronously
 
 
-10. SERIAL COMMANDS
+13. SERIAL COMMANDS
 
   @SER CONNECT COMx
       Connect to a serial controller
@@ -195,6 +298,23 @@ Notes:
 
   @SER LED adr OFF
       Switch the specified LED off
+
+  ASSIGN variable
+      Wait for the next external numeric value.
+      The value can be assigned to a numeric variable
+      or an existing numeric array element.
+
+      Examples:
+
+        100 ASSIGN TEMP
+        110 ASSIGN TEMP(1)
+
+      ASSIGN does not accept string variables.
+
+      If the serial connection is lost while waiting,
+      program execution stops with:
+
+        ?SERIAL CONNECTION LOST
 
 
 ==================================================

@@ -61,8 +61,10 @@ Private Sub Class_Globals
 	' BASIC-58 
 	' Interpreter
 	Private Interpreter As B58Interpreter
+
 	' Serial Communication
 	Private Serial As B58Serial
+	
 	' System
 	Private System As B58System
 
@@ -88,8 +90,10 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	' BASIC-58 
 	' Interpreter with event prefix Interpreter
 	Interpreter.Initialize(Me, "Interpreter")
+
 	' Serial communication with event prefix Serial
 	Serial.Initialize(Me, "Serial")
+
 	' System commands
 	System.Initialize(Me, "System")
 		
@@ -328,6 +332,9 @@ Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
 End Sub
 #End Region
 
+' ----------------------------------------------------------------
+' SYSTEM CALLBACKS
+' ----------------------------------------------------------------
 #Region System
 Private Sub System_Output(Message As String)
 	PrintText(taOutput, Message)
@@ -752,9 +759,9 @@ End Sub
 #End Region
 
 ' ----------------------------------------------------------------
-' SERIAL COMMUNICATION CALLBACKS
+' SERIAL COMMUNICATION
 ' ----------------------------------------------------------------
-#Region B58SerialCALLBACKS
+#Region B58Serial
 Private Sub Serial_Connected
 	PrintText(taOutput, "[BASIC-58] Controller connected.")
 	Sleep(2000) ' Allow Arduino UNO reset
@@ -773,7 +780,8 @@ End Sub
 
 Private Sub Serial_Disconnected
 	PrintText(taOutput, "[BASIC-58] Controller disconnected.")
-	Interpreter.ResumeHardwareCommand
+    Interpreter.ResumeHardwareCommand
+    Interpreter.ExternalDataDisconnected
 End Sub
 
 Private Sub Serial_Error(Message As String)
@@ -789,6 +797,17 @@ End Sub
 
 Private Sub Serial_NoPortsFound
 	PrintText(taOutput, "NO SERIAL PORTS FOUND.")
+End Sub
+
+Private Sub Serial_DataReceived(Frame() As Byte)
+
+	Dim Adr As Byte = B58Protocol.GetAdr(Frame)
+	Dim Cmd As Byte = B58Protocol.GetCmd(Frame)
+	Dim Val As Byte = B58Protocol.GetVal(Frame)
+
+	Log($"[BASIC-58] Received: ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
+
+	Interpreter.SubmitExternalData(B58Protocol.ToUnsigned(Val))
 End Sub
 #End Region
 
