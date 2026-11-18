@@ -807,7 +807,10 @@ Private Sub Serial_DataReceived(Frame() As Byte)
 
 	Log($"[BASIC-58] Received: ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
 
-	Interpreter.SubmitExternalData(B58Protocol.ToUnsigned(Val))
+	Interpreter.SubmitExternalData( _
+    	B58Protocol.ToUnsigned(Adr), _
+    	B58Protocol.ToUnsigned(Cmd), _
+    	B58Protocol.ToUnsigned(Val))
 End Sub
 #End Region
 

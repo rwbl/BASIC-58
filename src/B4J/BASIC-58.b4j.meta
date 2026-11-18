@@ -22,6 +22,6 @@ ModuleClosedNodes4=
 ModuleClosedNodes5=
 ModuleClosedNodes6=
 ModuleClosedNodes7=
-NavigationStack=B58Interpreter,GetProgramText,3670,0,B58Interpreter,SubmitExternalData,3815,0,B58Interpreter,PrepareSerialCommand,3867,0,B58Interpreter,ContinueProgram,1046,0,B58Interpreter,GetNumericTargetValue,3569,0,B58Interpreter,LoadProgram,163,0,B58Interpreter,RaiseReady,115,0,B58Interpreter,ExecuteCommand,231,0,B58Interpreter,RunProgram,229,0,B58Interpreter,ExecuteRenumber,3614,0
+NavigationStack=B58Interpreter,IsValidVariable,2371,0,B58Interpreter,EvaluatePrintItem,1221,0,B58Interpreter,EvaluateCondition,1241,0,B58Interpreter,PrintBasicText,1207,0,B58Interpreter,SpaceString,2861,0,B58Interpreter,EvaluateStringExpression,2606,6,B58Interpreter,IsStringExpressionForPrint,2878,2,B58Interpreter,Class_Globals,67,1,B58Interpreter,CollectData,741,0,B58Interpreter,ContinueProgram,760,0
 SelectedBuild=0
 VisibleModules=1,2,3,4,5,7

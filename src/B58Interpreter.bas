@@ -67,6 +67,11 @@ Private Sub Class_Globals
 	' ASSIGN External data assignment
 	Private WaitingForExternalData As Boolean
 	Private ExternalDataTarget As String
+	Private ExternalDataTarget2 As String
+	Private ExternalDataTarget3 As String
+	
+	' Trace
+	Private TraceEnabled As Boolean
 	
 	' Error handling
 	Private ErrorHandlerLine As Int
@@ -277,6 +282,17 @@ Public Sub ExecuteCommand(Command As String)
 
 		Case "RUN"
 			RunProgram
+
+		Case "BREAK"
+			WaitingForExternalData = False
+			ExternalDataTarget = ""
+			ExternalDataTarget2 = ""
+			ExternalDataTarget3 = ""
+			RunPosition = RunLines.Size
+			WaitingForDelay = False
+			WaitingForHardwareCommand = False
+			RaiseOutput("BREAK")
+			RaiseOutput("READY.")
 
 		Case "LIST"
 			ListProgram(0, -1)
@@ -739,9 +755,16 @@ Private Sub ContinueProgram
 		RunPosition = RunPosition + 1
 
 		Dim LineCode As String = ProgramLines.Get(LineNumber)
+		If TraceEnabled Then RaiseOutput("[TRACE] " & LineNumber)
+		
 		Dim UpperLine As String = LineCode.ToUpperCase.Trim
 
 		Select Case True
+			Case UpperLine = "TRACE ON"
+				TraceEnabled = True
+
+			Case UpperLine = "TRACE OFF"
+				TraceEnabled = False
 
 			Case UpperLine = "END"
 				RunPosition = RunLines.Size
@@ -2477,6 +2500,13 @@ Private Sub EvaluateStringExpression(Expression As String) As String
 			FunctionLength = 7
 		Case FunctionName.StartsWith("TRIM$(")
 			FunctionLength = 6
+		' Other
+		Case FunctionName.StartsWith("BIN(")
+			FunctionLength = 4
+		Case FunctionName.StartsWith("HEX(")
+			FunctionLength = 4
+		Case FunctionName.StartsWith("OCT(")
+			FunctionLength = 4
 		Case Else
 			ExprError = True
 			Return ""
@@ -2537,6 +2567,10 @@ Private Sub EvaluateStringExpression(Expression As String) As String
 	If FunctionName.StartsWith("LTRIM$(") Then ExpectedArguments = 1
 	If FunctionName.StartsWith("RTRIM$(") Then ExpectedArguments = 1
 	If FunctionName.StartsWith("TRIM$(") Then ExpectedArguments = 1
+	' Special cases
+	If FunctionName.StartsWith("BIN(") Then ExpectedArguments = 1
+	If FunctionName.StartsWith("HEX(") Then ExpectedArguments = 1
+	If FunctionName.StartsWith("OCT(") Then ExpectedArguments = 1
 
 	If ArgumentList.Size <> ExpectedArguments Then
 		ExprError = True
@@ -2550,6 +2584,50 @@ Private Sub EvaluateStringExpression(Expression As String) As String
 		If ExprError Then Return ""
 
 		Return NumberFormat(NumericResult, 1, 6)
+	End If
+
+	'BIN: Convert numeric expression to binary string.
+	If FunctionName.StartsWith("BIN(") Then
+		Dim BinValue As Double = EvaluateNumericExpression(ArgumentList.Get(0))
+
+		If ExprError Then Return ""
+
+		If BinValue < 0 Or BinValue <> Floor(BinValue) Then
+			ExprError = True
+			Return ""
+		End If
+
+		Dim BinResult As String = Bit.ToBinaryString(BinValue)
+
+		Return BinResult
+	End If
+
+	'OCT: Convert numeric expression to octal string.
+	If FunctionName.StartsWith("OCT(") Then
+		Dim OctValue As Double = EvaluateNumericExpression(ArgumentList.Get(0))
+
+		If ExprError Then Return ""
+
+		If OctValue < 0 Or OctValue <> Floor(OctValue) Then
+			ExprError = True
+			Return ""
+		End If
+
+		Return Bit.ToOctalString(OctValue)
+	End If
+	
+	'HEX: Convert numeric expression to hexadecimal string.
+	If FunctionName.StartsWith("HEX(") Then
+		Dim HexValue As Double = EvaluateNumericExpression(ArgumentList.Get(0))
+
+		If ExprError Then Return ""
+
+		If HexValue <> Floor(HexValue) Then
+			ExprError = True
+			Return ""
+		End If
+
+		Return Bit.ToHexString(HexValue).ToUpperCase
 	End If
 
 	'CHR$: Convert number to character.
@@ -2814,7 +2892,10 @@ Private Sub IsStringExpressionForPrint(Item As String) As Boolean
 		UpperPart.StartsWith("LCASE$(") Or _
 		UpperPart.StartsWith("LTRIM$(") Or _
 		UpperPart.StartsWith("RTRIM$(") Or _
-		UpperPart.StartsWith("TRIM$(") Then
+		UpperPart.StartsWith("TRIM$(") Or _
+		UpperPart.StartsWith("BIN(") Or _
+		UpperPart.StartsWith("HEX(") Or _
+		UpperPart.StartsWith("OCT(") Then
 
 		Return True
 	End If
@@ -3759,14 +3840,39 @@ Private Sub ExecuteAssign(LineCode As String) As Boolean
 	Dim Statement As String = LineCode.Trim
 
 	If Statement.Length < 7 Then Return False
-
 	If Statement.SubString2(0, 6).ToUpperCase <> "ASSIGN" Then Return False
 
-	Dim Target As String = Statement.SubString(6).Trim.ToUpperCase
+	Dim TargetText As String = Statement.SubString(6).Trim.ToUpperCase
+	If TargetText = "" Then Return False
+
+	Dim Targets() As String = Regex.Split(",", TargetText)
+
+	If Targets.Length <> 1 And Targets.Length <> 3 Then Return False
+
+	For Each Target As String In Targets
+		If ValidateAssignTarget(Target.Trim) = False Then Return False
+	Next
+
+	ExternalDataTarget = Targets(0).Trim
+
+	If Targets.Length = 3 Then
+		ExternalDataTarget2 = Targets(1).Trim
+		ExternalDataTarget3 = Targets(2).Trim
+	Else
+		ExternalDataTarget2 = ""
+		ExternalDataTarget3 = ""
+	End If
+
+	WaitingForExternalData = True
+
+	Return True
+
+End Sub
+
+Private Sub ValidateAssignTarget(Target As String) As Boolean
 
 	If Target = "" Then Return False
 
-	'Array element.
 	Dim OpenPos As Int = Target.IndexOf("(")
 	Dim ClosePos As Int = Target.IndexOf(")")
 
@@ -3793,9 +3899,6 @@ Private Sub ExecuteAssign(LineCode As String) As Boolean
 		If Target.EndsWith("$") Then Return False
 	End If
 
-	ExternalDataTarget = Target
-	WaitingForExternalData = True
-
 	Return True
 
 End Sub
@@ -3803,29 +3906,42 @@ End Sub
 
 #Region ExternalData
 'Submit an external numeric value to an active ASSIGN statement.
-Public Sub SubmitExternalData(Value As String)
+Public Sub SubmitExternalData(Adr As Int, Cmd As Int, Val As Int)
 
 	If WaitingForExternalData = False Then Return
 
-	Dim Target As String = ExternalDataTarget
+	Dim Targets As List
+	Targets.Initialize
+	Targets.Add(ExternalDataTarget)
+
+	If ExternalDataTarget2 <> "" Then
+		Targets.Add(ExternalDataTarget2)
+		Targets.Add(ExternalDataTarget3)
+	End If
 
 	WaitingForExternalData = False
+
 	ExternalDataTarget = ""
+	ExternalDataTarget2 = ""
+	ExternalDataTarget3 = ""
 
-	If ExecuteLet("LET " & Target & " = " & Value) = False Then
+	Dim Values As List
+	Values.Initialize
 
-		If ExprError Then
-			If ExprErrorCode = 11 Then
-				HandleProgramError("?DIVISION BY ZERO")
-			Else
-				HandleProgramError("?ILLEGAL EXPRESSION")
-			End If
-		Else
-			HandleProgramError("?SYNTAX ERROR")
-		End If
-
-		Return
+	If Targets.Size = 1 Then
+		Values.Add(Val)
+	Else
+		Values.Add(Adr)
+		Values.Add(Cmd)
+		Values.Add(Val)
 	End If
+
+	For i = 0 To Targets.Size - 1
+		If ExecuteLet("LET " & Targets.Get(i) & " = " & Values.Get(i)) = False Then
+			HandleProgramError("?ILLEGAL EXPRESSION")
+			Return
+		End If
+	Next
 
 	ContinueProgram
 

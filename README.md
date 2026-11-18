@@ -66,6 +66,8 @@ BASIC-58 is itself written in BASIC — specifically, B4J.
 - `END`.
 - User-defined numeric functions (`DEF FN`).
 - Multiple function parameters and nested function calls.- Runtime error handling and recovery.
+- Execution tracing (`TRACE ON` and `TRACE OFF`).
+- Number base conversion (`HEX`, `BIN`, and `OCT`).
 
 ### Error handling
 
@@ -356,6 +358,49 @@ Expected output:
 
 ---
 
+### Execution tracing
+
+BASIC-58 provides simple execution tracing to help debug programs.
+
+Two statements control tracing:
+
+| Statement | Description |
+|---|---|
+| `TRACE ON` | Enable execution tracing |
+| `TRACE OFF` | Disable execution tracing |
+
+While tracing is enabled, BASIC-58 displays the line number
+of each executed program statement using the `[TRACE]` prefix.
+
+Example:
+
+```basic
+10 TRACE ON
+20 FOR I = 1 TO 3
+30 PRINT I
+40 NEXT I
+50 TRACE OFF
+60 END
+```
+Example output:
+[TRACE] 20
+[TRACE] 30
+1
+[TRACE] 40
+[TRACE] 30
+2
+[TRACE] 40
+[TRACE] 30
+3
+[TRACE] 40
+[TRACE] 50
+
+
+Repeated execution of a line, such as during a FOR/NEXT loop,
+is displayed each time.
+
+---
+
 ### Important IF ... THEN rule
 
 In BASIC-58, `IF ... THEN` accepts a line number as its target. It does not accept an inline statement.
@@ -622,6 +667,27 @@ BASIC-58 provides the following string functions.
 | `LTRIM$(s$)` | Remove leading spaces |
 | `RTRIM$(s$)` | Remove trailing spaces |
 | `TRIM$(s$)` | Remove leading and trailing spaces |
+| `HEX(x)` | Convert an integer to a hexadecimal string |
+| `BIN(x)` | Convert an integer to a binary string |
+| `OCT(x)` | Convert an integer to an octal string |
+
+### Number base conversion
+
+BASIC-58 supports conversion of integer values to hexadecimal,
+binary and octal strings.
+
+Example:
+
+```basic
+10 LET VALUE = 1958
+20 PRINT "DECIMAL: "; VALUE
+30 PRINT "HEX: "; HEX(VALUE)
+40 PRINT "BINARY: "; BIN(VALUE)
+50 PRINT "OCTAL: "; OCT(VALUE)
+60 END
+```
+The functions return strings and can be used directly in PRINT
+statements and string expressions.
 
 ---
 
@@ -687,23 +753,20 @@ The communication is based on a compact, fixed-length **five-byte binary protoco
 Its simple structure makes it possible to communicate with different devices and microcontrollers without requiring a complex communication stack.
 
 ### Serial commands
-
-```text
+```
 @SER CONNECT COMx
 @SER DISCONNECT
 @SER LISTPORTS
 @SER ADR CMD VAL
 ```
-ADR   Device address (0–255)
-CMD   Command code (0–255)
-VAL   Command value (0–255)
 
-All three parameters accept numeric literals, numeric
-variables or parenthesized numeric expressions.
+`ADR`   Device address (0–255)
+`CMD`   Command code (0–255)
+`VAL`   Command value (0–255)
 
-The command is transmitted using the BASIC-58
-five-byte serial protocol:
+All three parameters accept numeric literals, numeric variables or parenthesized numeric expressions.
 
+The command is transmitted using the BASIC-58 five-byte serial protocol:
 ```
 0x19 | ADR | CMD | VAL | 0x58
 ```
@@ -716,7 +779,7 @@ Example:
 40 @SER 18 4 0
 50 @SER DISCONNECT
 ```
-Or
+Or using variables and expressions:
 ```
 10 @SER CONNECT COM10
 20 LET LED = 18
@@ -727,32 +790,29 @@ Or
 70 @SER DISCONNECT
 80 END
 ```
-
 Exactly three parameters are required.
 
-Expressions containing spaces must be enclosed in
-parentheses.
+Expressions containing spaces must be enclosed in parentheses.
 
-Each parameter must evaluate to an integer between
-0 and 255.
+Each parameter must evaluate to an integer between 0 and 255.
 
-The serial transport and protocol remain independent
-of the meaning of individual commands. The connected
-controller determines how each command is interpreted.
+The serial transport and protocol remain independent of the meaning of individual commands. The connected controller determines how each command is interpreted.
 
-These commands provide serial connection management and 
-basic hardware control.
+These commands provide serial connection management and basic hardware control.
 
 ### External data acquisition
+BASIC-58 can receive numeric values from external devices using the ASSIGN statement.
 
-BASIC-58 can receive numeric values from external devices.
+Two forms are supported:
 
-The `ASSIGN` statement waits for the next incoming serial value
-and assigns it to a numeric variable or array element.
+#### Single-value assignment
+```
+ASSIGN variable
+```
+Waits for the next incoming serial frame and assigns its VAL field to a numeric variable or an existing numeric array element.
 
 Example:
-
-```basic
+```
 10 @SER CONNECT COM10
 20 DIM TEMPERATURE(10)
 30 FOR I = 1 TO 10
@@ -766,13 +826,40 @@ Example:
 110 @SER DISCONNECT
 120 END
 ```
+This example collects ten temperature readings and calculates their average.
 
-This example collects ten temperature readings and calculates
-their average.
+#### Three-field assignment
+```
+ASSIGN ADR,CMD,VAL
+```
+Waits for the next incoming serial frame and assigns all three fields to numeric variables:
+- ADR – Device address
+- CMD – Command code
+- VAL – Command value
 
-If the serial connection is lost while waiting for external
-data, BASIC-58 reports ?SERIAL CONNECTION LOST and stops
-program execution.
+Example:
+```
+10 @SER CONNECT COM10
+20 PRINT "WAITING FOR TEMPERATURE..."
+30 ASSIGN ADR,CMD,VAL
+40 IF ADR = 32 THEN 60
+50 GOTO 30
+60 IF CMD = 1 THEN 80
+70 GOTO 30
+80 PRINT "TEMPERATURE: "; VAL
+90 GOTO 30
+```
+This example accepts only frames with address 32 and command 1. Other frames are ignored, and the program waits for the next incoming frame.
+
+ASSIGN does not accept string variables.
+
+If the serial connection is lost while waiting for external data, BASIC-58 reports:
+```
+?SERIAL CONNECTION LOST
+```
+and stops program execution.
+
+The BREAK command cancels a pending ASSIGN and stops program execution.
 
 ### Communication protocol
 The protocol uses five bytes per message:
@@ -897,6 +984,8 @@ Additional language tests cover:
 
 - Numeric and string expressions.
 - Mathematical and string functions.
+- Number base conversion (`HEX`, `BIN`, and `OCT`).
+- Execution tracing (`TRACE ON` and `TRACE OFF`).
 - Conditional branching.
 - Nested FOR/NEXT loops.
 - GOTO and GOSUB.
