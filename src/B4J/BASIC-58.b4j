@@ -30,6 +30,25 @@ NumberOfLibraries=9
 NumberOfModules=7
 Version=10.7
 @EndOfDesignText@
+' ================================================================
+' Main Module:	Main
+' Project:		BASIC-58
+' Brief:		Application entry point for BASIC-58.
+' Date:			See B4XMainPage Class_Globals VERSION
+' Author:		Robert W.B. Linn (c) 2026 MIT License
+' Description:	Initializes and starts the BASIC-58 application.
+'				Module responsibilities at a glance
+'				Module			Responsibility
+'				--------------------------------------------------
+'				Main			Application startup
+'				B4XMainPage		User interface
+'				B58Interpreter	BASIC language And execution
+'				B58Protocol		Serial protocol definitions
+'				B58Serial		External hardware communication
+'				B58System		Local system commands
+'				Utils	Shared helper functions
+' ================================================================
+
 #Region Project Attributes 
 	#MainFormWidth: 800
 	#MainFormHeight: 700 

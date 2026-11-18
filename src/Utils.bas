@@ -4,14 +4,22 @@ ModulesStructureVersion=1
 Type=StaticCode
 Version=10.7
 @EndOfDesignText@
-'Static code module
+' ================================================================
+' Code Module:	Utils
+' Project:		BASIC-58
+' Brief:		Shared utility functions for BASIC-58.
+' Description:	Provides general-purpose helper functions used
+'				throughout the application.
+' ================================================================
 
+' Scribbles:
 ' Log(GetSystemProperty("javafx.runtime.version", "unknown"))
 
-Sub Process_Globals
-	Private fx As JFX
+Private Sub Process_Globals
+	'
 End Sub
 
+' Return fomatted number without . and , characters.
 Public Sub FormatNumber(Value As Double) As String
 	Dim Result As String = NumberFormat2(Value, 1, 0, 6, False)
 

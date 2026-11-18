@@ -5,10 +5,14 @@ Type=Class
 Version=10.7
 @EndOfDesignText@
 ' ================================================================
-' File:			B58Interpreter
-' Brief:		
-' Description:	
-' DependsOn:	
+' Class Module:	B58Interpreter
+' Project:		BASIC-58
+' Brief:		BASIC-58 language interpreter.
+' Description:	Interprets and executes BASIC-58 programs and
+'				immediate commands.
+'				Handles program lines, variables, arrays, expressions,
+'				control structures, input/output and execution flow.
+'				Communicates with the application through callbacks.
 ' ================================================================
 
 Private Sub Class_Globals
@@ -28,6 +32,9 @@ Private Sub Class_Globals
 	' Program execution state
 	Private RunLines As List
 	Private RunPosition As Int
+
+	' Help (file located dirassets folder)
+	Private HELP_FILE As String  = "Help.txt"
 
 	' INPUT handling
 	Private WaitingForInput As Boolean
@@ -108,7 +115,8 @@ End Sub
 ' INTERFACE PUBLIC API
 ' ----------------------------------------------------------------
 
-'Parse numbered BASIC lines into ProgramLines.
+'Parse BASIC lines into ProgramLines.
+'Unnumbered lines receive automatic line numbers starting at 10.
 Public Sub LoadProgram(Source As String)
 
 	ProgramLines.Clear
@@ -117,6 +125,7 @@ Public Sub LoadProgram(Source As String)
 	Dim EditorLines() As String = Regex.Split("\r\n|\n|\r", Source)
 
 	Dim FileLineNumber As Int = 0
+	Dim NextLineNumber As Int = 10
 
 	For Each EditorLine As String In EditorLines
 
@@ -126,35 +135,42 @@ Public Sub LoadProgram(Source As String)
 		'Ignore empty lines.
 		If EditorLine = "" Then Continue
 
-		'Find the separator between line number and statement.
 		Dim SpacePos As Int = EditorLine.IndexOf(" ")
+		Dim LineNumber As Int
+		Dim LineCode As String
 
-		If SpacePos <= 0 Then
-			RaiseOutput("WARNING: INVALID LINE AT FILE LINE " & FileLineNumber)
-			Continue
+		'Check whether the line already has a line number.
+		Dim IsNumbered As Boolean = False
+
+		If SpacePos > 0 Then
+			Dim NumberText As String = EditorLine.SubString2(0, SpacePos)
+
+			If IsNumber(NumberText) Then
+				Dim NumberValue As Double = NumberText
+
+				If NumberValue >= 0 And NumberValue = Floor(NumberValue) Then
+					LineNumber = NumberValue
+					LineCode = EditorLine.SubString(SpacePos + 1).Trim
+					IsNumbered = LineCode <> ""
+				End If
+			End If
 		End If
 
-		Dim NumberText As String = EditorLine.SubString2(0, SpacePos)
-		Dim LineCode As String = EditorLine.SubString(SpacePos + 1).Trim
-
-		'Validate line number.
-		If IsNumber(NumberText) = False Or LineCode = "" Then
-			RaiseOutput("WARNING: INVALID LINE AT FILE LINE " & FileLineNumber)
-			Continue
+		If IsNumbered = False Then
+			'Assign the next automatic line number.
+			LineNumber = NextLineNumber
+			LineCode = EditorLine
 		End If
-
-		Dim NumberValue As Double = NumberText
-
-		If NumberValue < 0 Or NumberValue <> Floor(NumberValue) Then
-			RaiseOutput("WARNING: INVALID LINE AT FILE LINE " & FileLineNumber)
-			Continue
-		End If
-
-		Dim LineNumber As Int = NumberValue
 
 		'Store program line.
-		'Duplicate line numbers replace previous entries.
 		ProgramLines.Put(LineNumber, LineCode)
+		
+		'Advance automatic line numbering to the next multiple of 10.
+		If IsNumbered Then
+			NextLineNumber = Max(NextLineNumber, (Floor(LineNumber / 10) + 1) * 10)
+		Else
+			NextLineNumber = NextLineNumber + 10
+		End If
 
 	Next
 
@@ -253,21 +269,28 @@ Public Sub ExecuteCommand(Command As String)
 
     Select Case UpperCommand
         Case "HELP"
-            ExecuteHelp
+			ExecuteHelp
 
-        Case "LIST"
-            ListProgram
+		Case "RUN"
+			RunProgram
 
-        Case "RUN"
-            RunProgram
+		Case "LIST"
+			ListProgram(0, -1)
 
-        Case Else
-			If UpperCommand = "PRINT" Or UpperCommand.StartsWith("PRINT ") Then
+		Case "RENUM"
+			ExecuteRenumber(10, 10)
+
+		Case Else
+			If UpperCommand.StartsWith("RENUM ") Then
+				ExecuteRenumberCommand(Command)
+			Else If UpperCommand.StartsWith("LIST ") Then
+				ExecuteList(Command)
+			Else If UpperCommand = "PRINT" Or UpperCommand.StartsWith("PRINT ") Then
 				PrintBasicText(Command)
 			Else
 				RaiseOutput("?SYNTAX ERROR")
-			End If
-    End Select
+			End If    
+		End Select
 
 	If UpperCommand <> "RUN" Then RaiseReady
 End Sub
@@ -443,7 +466,7 @@ Private Sub ExecuteLet(LineCode As String) As Boolean
 
 		If ExprError Then Return False
 
-		Values.Set(ArrayIndex - 1, NumberFormat2(Result, 1, 0, 6, False))
+		Values.Set(ArrayIndex - 1, Utils.FormatNumber(Result))
 
 		Return True
 
@@ -471,7 +494,7 @@ Private Sub ExecuteLet(LineCode As String) As Boolean
 
 	If ExprError Then Return False
 
-	Variables.Put(VariableName, NumberFormat2(Result, 1, 0, 6, False))
+	Variables.Put(VariableName, Utils.FormatNumber(Result))
 
 	Return True
 End Sub
@@ -1896,7 +1919,7 @@ Private Sub ExecuteFor(LineCode As String, BodyPosition As Int) As Boolean
 		Return False
 	End If
 
-	Variables.Put(VariableName, NumberFormat(StartValue, 1, 6))
+	Variables.Put(VariableName, Utils.FormatNumber(StartValue))
 
 	'Check whether the loop should execute.
 	If (StepValue > 0 And StartValue > LimitValue) Or _
@@ -1944,7 +1967,7 @@ Private Sub ExecuteNext(LineCode As String) As Boolean
 
 	CurrentValue = CurrentValue + StepValue
 
-	Variables.Put(VariableName, NumberFormat(CurrentValue, 1, 6))
+	Variables.Put(VariableName, Utils.FormatNumber(CurrentValue))
 
 	Dim ContinueLoop As Boolean
 
@@ -2903,29 +2926,99 @@ Private Sub JumpToLine(TargetLine As Int) As Boolean
 	Return True
 End Sub
 
-Private Sub ListProgram
-	If ProgramLines.Size = 0 Then
-		RaiseOutput("NO PROGRAM")
-		Return
+#Region ListProgram
+Private Sub ExecuteList(Command As String)
+
+	Dim Arguments As String = Command.SubString(4).Trim
+
+	Dim StartLine As Int
+	Dim EndLine As Int = -1
+
+	Dim CommaPos As Int = Arguments.IndexOf(",")
+
+	If CommaPos >= 0 Then
+
+		Dim StartText As String = Arguments.SubString2(0, CommaPos).Trim
+		Dim EndText As String = Arguments.SubString(CommaPos + 1).Trim
+
+		If StartText = "" Or EndText = "" Then
+			RaiseOutput("?SYNTAX ERROR")
+			Return
+		End If
+
+		If IsNumber(StartText) = False Or IsNumber(EndText) = False Then
+			RaiseOutput("?SYNTAX ERROR")
+			Return
+		End If
+
+		Dim StartValue As Double = StartText
+		Dim EndValue As Double = EndText
+
+		If StartValue < 0 Or EndValue < 0 Or _
+            StartValue <> Floor(StartValue) Or EndValue <> Floor(EndValue) Or _
+            StartValue > EndValue Then
+
+			RaiseOutput("?INVALID LINE RANGE")
+			Return
+		End If
+
+		StartLine = StartValue
+		EndLine = EndValue
+
+	Else
+
+		If IsNumber(Arguments) = False Then
+			RaiseOutput("?SYNTAX ERROR")
+			Return
+		End If
+
+		Dim StartValue As Double = Arguments
+
+		If StartValue < 0 Or StartValue <> Floor(StartValue) Then
+			RaiseOutput("?INVALID LINE NUMBER")
+			Return
+		End If
+
+		StartLine = StartValue
+
 	End If
 
-	'Copy Map keys into a List.
-	Dim LineNumbers As List
-	LineNumbers.Initialize
+	ListProgram(StartLine, EndLine)
 
-	For Each Key As Object In ProgramLines.Keys
-		LineNumbers.Add(Key)
-	Next
-
-	'Sort line numbers numerically.
-	LineNumbers.Sort(True)
-
-	'Display the BASIC program.
-	For Each LineNumber As Int In LineNumbers
-		Dim LineCode As String = ProgramLines.Get(LineNumber)
-		RaiseOutput(LineNumber & " " & LineCode)
-	Next
 End Sub
+
+Private Sub ListProgram(StartLine As Int, EndLine As Int)
+
+    If ProgramLines.Size = 0 Then
+        RaiseOutput("NO PROGRAM")
+        Return
+    End If
+
+    'Copy Map keys into a List.
+    Dim LineNumbers As List
+    LineNumbers.Initialize
+
+    For Each Key As Object In ProgramLines.Keys
+        LineNumbers.Add(Key)
+    Next
+
+    'Sort line numbers numerically.
+    LineNumbers.Sort(True)
+	
+    'Display the BASIC program within the requested range.
+    For Each LineNumber As Int In LineNumbers
+
+        If LineNumber < StartLine Then Continue
+
+        If EndLine >= 0 And LineNumber > EndLine Then Exit
+
+        Dim LineCode As String = ProgramLines.Get(LineNumber)
+        RaiseOutput(LineNumber & " " & LineCode)
+
+    Next
+
+End Sub
+#End Region
 
 Public Sub ClearProgram
     ProgramLines.Clear
@@ -3016,8 +3109,8 @@ End Sub
 ' HELP
 ' ----------------------------------------------------------------
 #Region Help
-Private Sub ExecuteHelp
-	' File.ReadString(File.DirApp, "Help.txt")
+Public Sub ExecuteHelp
+	RaiseOutput(File.ReadString(File.DirAssets, HELP_FILE))
 End Sub
 #End Region
 
@@ -3140,7 +3233,7 @@ Private Sub EvaluateUserFunction(FunctionName As String, Arguments As List) As D
 		Dim Parameter As String = Parameters.Get(i)
 		Dim Argument As Double = Arguments.Get(i)
 
-		Variables.Put(Parameter, NumberFormat2(Argument, 1, 0, 6, False))
+		Variables.Put(Parameter, Utils.FormatNumber(Argument))
 	Next
 
 	'Evaluate function expression.
@@ -3228,3 +3321,182 @@ Private Sub ExecuteDim(LineCode As String) As Boolean
 End Sub
 #End Region
 
+#Region Renumber
+Private Sub ExecuteRenumber(NewStart As Int, Increment As Int)
+
+	If ProgramLines.Size = 0 Then
+		RaiseOutput("NO PROGRAM")
+		Return
+	End If
+
+	'Copy existing line numbers.
+	Dim OldLineNumbers As List
+	OldLineNumbers.Initialize
+
+	For Each Key As Object In ProgramLines.Keys
+		OldLineNumbers.Add(Key)
+	Next
+
+	OldLineNumbers.Sort(True)
+
+	'Create the old-to-new line number mapping.
+	Dim LineNumberMap As Map
+	LineNumberMap.Initialize
+
+	Dim NewLineNumber As Int = NewStart
+
+	For Each OldLineNumber As Int In OldLineNumbers
+		LineNumberMap.Put(OldLineNumber, NewLineNumber)
+		NewLineNumber = NewLineNumber + Increment
+	Next
+
+	'Create the renumbered program.
+	Dim NewProgramLines As Map
+	NewProgramLines.Initialize
+
+	For Each OldLineNumber As Int In OldLineNumbers
+
+		Dim LineCode As String = ProgramLines.Get(OldLineNumber)
+		NewLineNumber = LineNumberMap.Get(OldLineNumber)
+
+		LineCode = UpdateLineReference(LineCode, "GOTO", LineNumberMap)
+		LineCode = UpdateLineReference(LineCode, "GOSUB", LineNumberMap)
+		LineCode = UpdateLineReference(LineCode, "THEN", LineNumberMap)
+		
+		NewProgramLines.Put(NewLineNumber, LineCode)
+
+	Next
+
+	ProgramLines = NewProgramLines
+	
+	CallSub2(mCallback, mEventName & "_ProgramRenumbered", GetProgramText)
+	
+	RaiseOutput("PROGRAM RENUMBERED")
+End Sub
+
+Private Sub ExecuteRenumberCommand(Command As String)
+
+    Dim Arguments As String = Command.SubString(5).Trim
+
+    Dim NewStart As Int = 10
+    Dim Increment As Int = 10
+
+    Dim CommaPos As Int = Arguments.IndexOf(",")
+
+    If CommaPos >= 0 Then
+
+        Dim StartText As String = Arguments.SubString2(0, CommaPos).Trim
+        Dim IncrementText As String = Arguments.SubString(CommaPos + 1).Trim
+
+        If IsNumber(StartText) = False Or IsNumber(IncrementText) = False Then
+            RaiseOutput("?SYNTAX ERROR")
+            Return
+        End If
+
+        Dim StartValue As Double = StartText
+        Dim IncrementValue As Double = IncrementText
+
+        If StartValue < 0 Or IncrementValue <= 0 Or _
+            StartValue <> Floor(StartValue) Or IncrementValue <> Floor(IncrementValue) Then
+
+            RaiseOutput("?INVALID RENUMBER PARAMETERS")
+            Return
+        End If
+
+        NewStart = StartValue
+        Increment = IncrementValue
+
+    Else
+
+        If IsNumber(Arguments) = False Then
+            RaiseOutput("?SYNTAX ERROR")
+            Return
+        End If
+
+        Dim StartValue As Double = Arguments
+
+        If StartValue < 0 Or StartValue <> Floor(StartValue) Then
+            RaiseOutput("?INVALID START LINE")
+            Return
+        End If
+
+        NewStart = StartValue
+
+    End If
+
+    ExecuteRenumber(NewStart, Increment)
+
+End Sub
+
+Public Sub GetProgramText As String
+
+	Dim Result As StringBuilder
+	Result.Initialize
+
+	Dim LineNumbers As List
+	LineNumbers.Initialize
+
+	For Each Key As Object In ProgramLines.Keys
+		LineNumbers.Add(Key)
+	Next
+
+	LineNumbers.Sort(True)
+
+	For Each LineNumber As Int In LineNumbers
+		Result.Append(LineNumber)
+		Result.Append(" ")
+		Result.Append(ProgramLines.Get(LineNumber))
+		Result.Append(CRLF)
+	Next
+
+	Return Result.ToString
+End Sub
+
+Private Sub UpdateLineReference(LineCode As String, Command As String, LineNumberMap As Map) As String
+
+	Dim UpperLine As String = LineCode.Trim.ToUpperCase
+	Dim TargetText As String = ""
+
+	Select Command
+
+		Case "GOTO", "GOSUB"
+
+			If UpperLine.StartsWith(Command & " ") = False Then Return LineCode
+
+			TargetText = LineCode.Trim.SubString(Command.Length).Trim
+
+		Case "THEN"
+
+			If UpperLine.StartsWith("IF ") = False Then Return LineCode
+
+			Dim ThenPos As Int = UpperLine.LastIndexOf("THEN ")
+
+			If ThenPos < 0 Then Return LineCode
+
+			TargetText = LineCode.SubString(ThenPos + 5).Trim
+
+		Case Else
+			Return LineCode
+
+	End Select
+
+	If IsNumber(TargetText) = False Then Return LineCode
+
+	Dim TargetValue As Double = TargetText
+
+	If TargetValue < 0 Or TargetValue <> Floor(TargetValue) Then Return LineCode
+
+	Dim TargetLine As Int = TargetValue
+
+	If LineNumberMap.ContainsKey(TargetLine) = False Then Return LineCode
+
+	Dim NewTargetLine As Int = LineNumberMap.Get(TargetLine)
+
+	If Command = "THEN" Then
+		Return LineCode.SubString2(0, ThenPos + 5) & NewTargetLine
+	Else
+		Return Command & " " & NewTargetLine
+	End If
+
+End Sub
+#End Region

@@ -5,13 +5,16 @@ Type=Class
 Version=10.7
 @EndOfDesignText@
 ' ================================================================
-' File:			B58Serial
-' Brief:		
-' Description:	
-' DependsOn:	
+' Class Module:	B58Serial
+' Project:		BASIC-58
+' Brief:		Serial communication interface for BASIC-58.
+' Description:	Handles communication with external hardware devices.
+'				Processes @SER commands and manages serial
+'				transmission and reception using B58Protocol.
+'				Returns hardware responses to the interpreter.
 ' ================================================================
 
-Sub Class_Globals
+Private Sub Class_Globals
 
 	' Communication
 	Private SerialLine As Serial
@@ -37,9 +40,15 @@ Sub Class_Globals
 End Sub
 
 Public Sub Initialize(Callback As Object, EventName As String)
+	' Events
 	mCallback = Callback
 	mEventName = EventName
+
+	' Serial line
+	SerialLine.Initialize("SerialLine")
 	RxBuffer.Initialize
+	
+	' Command timer
 	CommandTimer.Initialize("CommandTimer", COMMAND_TIMEOUT_MS)
 	CommandTimer.Enabled = False
 End Sub
@@ -53,8 +62,6 @@ Public Sub Connect(Port As String)
 	Log($"[B58Serial.Connect] Port: ${Port}"$)
 
 	Disconnect
-
-	SerialLine.Initialize("SerialLine")
 
 	Try
 		SerialLine.Open(Port)

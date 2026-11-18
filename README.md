@@ -136,13 +136,19 @@ The following commands are available in the BASIC-58 environment.
 | Command | Description |
 |---|---|
 | `HELP` | Display help information. |
-| `LIST` | List the current BASIC program. |
 | `RUN` | Execute the current program. |
 | `NEW` | Create a new empty program. |
 | `SAVE` | Save the current BASIC program to a program file. |
 | `LOAD` | Load a BASIC program from a program file. |
 | `CLS` | Clear the output area. |
 | `BREAK` | Interrupt program execution. |
+| `BYE` | Close BASIC-58 and return to the desktop. |
+| `LIST` | List the entire program. |
+| `LIST start-line` | List from the specified line onwards. |
+| `LIST start-line, end-line` | List the specified line range, inclusive. |
+| `RENUM` | Renumber the program, starting at line 10 in increments of 10. |
+| `RENUM new-start` | Renumber the program from the specified starting line, using increments of 10. |
+| `RENUM new-start, increment` | Renumber the program using the specified starting line and increment. |
 
 Immediate expressions can also be evaluated directly:
 
@@ -150,6 +156,8 @@ Immediate expressions can also be evaluated directly:
 PRINT 10 + 20
 PRINT "HELLO"
 ```
+
+---
 
 ### Editing program lines
 
@@ -169,6 +177,12 @@ Entering a line number without code deletes the corresponding line:
 ```
 
 The program can be displayed with `LIST`.
+LIST Options:
+```
+LIST
+LIST 100
+LIST 100,200
+```
 
 ---
 
@@ -193,6 +207,36 @@ LOAD
 to load a previously saved program.
 
 The editor tracks modifications so that unsaved changes can be identified. When an operation would discard modified source code, BASIC-58 asks for confirmation.
+
+---
+
+## Program line numbering
+
+BASIC-58 supports both numbered and unnumbered program lines.
+
+When a program is loaded from the editor, lines without an explicit
+line number are automatically numbered, starting at 10 and
+increasing in steps of 10.
+
+For example, entering:
+
+```basic
+LET A = 1
+PRINT A
+END
+```
+
+is interpreted as:
+```
+10 LET A = 1
+20 PRINT A
+30 END
+```
+
+Explicit line numbers are preserved. Program lines are stored and
+listed in ascending line-number order.
+
+Use the RENUM command to renumber the entire program.
 
 ---
 
@@ -242,6 +286,8 @@ Incorrect:
 
 `FOR` loop initialization and `READ` assignments are exceptions and do not require `LET`.
 
+---
+
 ### Arithmetic operators
 
 | Operator | Description |
@@ -271,6 +317,8 @@ Expected output:
 30
 ```
 
+---
+
 ### Program control
 
 | Statement | Description |
@@ -284,6 +332,8 @@ Expected output:
 | `ON ... GOTO` | Select a branch |
 | `ON ... GOSUB` | Select a subroutine |
 | `END` | End program execution |
+
+---
 
 ### Important IF ... THEN rule
 
@@ -323,6 +373,8 @@ Supported comparison operators:
 | `<=` | Less than or equal |
 | `>=` | Greater than or equal |
 
+---
+
 ### FOR / NEXT loops
 
 BASIC-58 supports counted loops, including nested loops and positive or negative step values.
@@ -344,6 +396,8 @@ A step value can be specified:
 ```
 
 Loop variables must be single letters from A to Z.
+
+---
 
 ### INPUT and PRINT
 
@@ -381,6 +435,8 @@ Example:
 80 END
 ```
 
+---
+
 ### DATA, READ and RESTORE
 
 `DATA` defines values in a program.
@@ -401,7 +457,25 @@ Example:
 90 END
 ```
 
+---
+
+### RENUM
+
+Renumbers the current program.
+
+Line references in `GOTO`, `GOSUB` and `IF ... THEN` statements
+are updated automatically.
+
+Examples:
+
+```basic
+RENUM
+RENUM 100
+RENUM 100,5
+```
 Numeric and string data are supported.
+
+---
 
 ### Random numbers
 
@@ -415,6 +489,8 @@ Example:
 30 PRINT "DICE: "; DICE
 40 END
 ```
+
+---
 
 ### User-defined functions
 
@@ -461,6 +537,8 @@ BASIC-58 provides the following numeric functions.
 | `RND(1)` | Random number |
 
 Trigonometric functions use radians.
+
+---
 
 ## String functions
 

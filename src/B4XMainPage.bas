@@ -5,18 +5,16 @@ Type=Class
 Version=9.85
 @EndOfDesignText@
 ' ================================================================
-' File:			B4XMainPage
+' Class Module:	B4XMainPage
 ' Project:		BASIC-58
 ' Brief:		Development program for BASIC-58.
 ' Date:			See Class_Globals VERSION
 ' Author:		Robert W.B. Linn (c) 2026 MIT License
 ' Description:	This page is used to develop & test BASIC-58.
-' Shortcuts:	Ctrl+N = New program, Ctrl+O = Open / Load, Ctrl+S = Save, F5 = Run
 ' DependsOn:	CSSUtils.
 '				Interpreter owns the Basic program, variables, execution state And all Basic commands.
 '				B4XMainPage owns the editor, terminal, command field, File dialogs And application state.
 '				The interpreter communicates with the page through callbacks.
-' Note:
 '				Made with curiosity, a little nostalgia, and the conviction that BASIC still has something to teach us.
 ' ================================================================
 
@@ -27,10 +25,10 @@ Version=9.85
 
 ' #Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
 
-Sub Class_Globals
+Private Sub Class_Globals
 	' A tiny BASIC interpreter
 	Private APPNAME As String = "BASIC-58"
-	Private APPVERSION As String = "v1.0.0 (Build 20261117)"
+	Private APPVERSION As String = "v1.0.0 (Build 20261118)"
 	Private APPCOPYRIGHT As String = "Copyright (c) 2026 Robert W.B. Linn - MIT Licence"
 
 	' Core
@@ -252,11 +250,15 @@ Private Sub MainKeyPressed_Filter(E As Event)
 			Case "F1"
 				R.RunMethod("consume")
 				ShowHelp
+
+			Case "F4"
+				R.RunMethod("consume")
+				ProcessCommand("RENUM")
 				
             Case "F5"
                 R.RunMethod("consume")
-                Interpreter.LoadProgram(taEditor.Text)
-                Interpreter.RunProgram
+				LoadEditorProgram
+				Interpreter.RunProgram
 
             Case "F6"
                 R.RunMethod("consume")
@@ -320,6 +322,10 @@ End Sub
 Private Sub Interpreter_SystemCommand(Command As String)
 	System.ExecuteCommand(Command)
 End Sub
+
+Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
+    taEditor.Text = ProgramText
+End Sub
 #End Region
 
 #Region System
@@ -341,7 +347,7 @@ Private Sub Toolbar_Click (lbl As B4XView)
 	'Log($"[Toolbar_Click] tag=${tag}, text=${lbl.Text}"$)
 	Select tag.ToUppercase
 			Case "RUN"
-				Interpreter.LoadProgram(taEditor.Text)
+				LoadEditorProgram
 				Interpreter.RunProgram
 			Case "LIST"
 				ProcessCommand("LIST")
@@ -449,8 +455,12 @@ Private Sub ProcessCommand(Command As String)
 			NewProgram
 
 		Case UpperCommand = "RUN"
-			Interpreter.LoadProgram(taEditor.Text)
+			LoadEditorProgram
 			Interpreter.RunProgram
+
+		Case UpperCommand = "BYE"
+			Serial.Disconnect
+			B4XPages.GetNativeParent(Me).Close
 			
 		Case UpperCommand = "BASIC-58"
 			ShowEasterEgg
@@ -465,6 +475,11 @@ Private Sub ProcessCommand(Command As String)
 			PrintText(taOutput, "[BASIC-58][E] Unknown command.")
 			
 		Case Else
+			If UpperCommand = "LIST" Or UpperCommand.StartsWith("LIST ") Or _
+				UpperCommand = "RENUM" Or UpperCommand.StartsWith("RENUM ") Then
+				LoadEditorProgram
+			End If
+
 			Interpreter.ExecuteCommand(Command)
 	End Select
 End Sub
@@ -484,6 +499,10 @@ Private Sub ProcessInput
 		ProcessCommand(Command)
 	End If
 
+End Sub
+
+Private Sub LoadEditorProgram
+	Interpreter.LoadProgram(taEditor.Text)
 End Sub
 #End Region
 
@@ -786,7 +805,6 @@ End Sub
 #Region Messages
 Private Sub ShowWelcomMessage
 	taOutput.Text = ""
-
 	PrintText(taOutput, "BASIC-58  BASIC INTERPRETER")
 	PrintText(taOutput, "VERSION " & APPVERSION)
 	PrintText(taOutput, APPCOPYRIGHT)
@@ -798,7 +816,9 @@ Private Sub ShowWelcomMessage
 End Sub
 
 Private Sub ShowHelp
-	taOutput.Text = File.ReadString(File.DirAssets, "Help.txt")
+	taOutput.Text = ""
+	Interpreter.ExecuteHelp
+	Utils.ScrollTextToTop(taOutput)
 	lblStatus.Text = "HELP"
 End Sub
 

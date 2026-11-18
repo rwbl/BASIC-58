@@ -4,8 +4,17 @@ ModulesStructureVersion=1
 Type=Class
 Version=10.7
 @EndOfDesignText@
+' ================================================================
+' Class Module:	B58System
+' Project:		BASIC-58
+' Brief:		System command handler for BASIC-58.
+' Description:	Handles local system commands issued through @SYS.
+'				Provides system information and utility functions,
+'				such as SHOW TIME and SHOW DATE.
+'				Communicates results through callbacks.
+' ================================================================
 
-Sub Class_Globals
+Private Sub Class_Globals
 	' Event callback
 	Private mCallback As Object
 	Private mEventName As String

@@ -5,8 +5,9 @@ Type=StaticCode
 Version=10.7
 @EndOfDesignText@
 ' ================================================================
-' File:			B58Protocol
-' Brief:		Shared code module for the B58Protocol protocol.
+' Class Module:	B58Protocol
+' Project:		BASIC-58
+' Brief:		Shared definitions for the BASIC-58 serial protocol.
 ' Description:	Communication using 5-Byte-Frame
 '				Byte 0: HDR  0x19  Frame header
 '				Byte 1: ADR  0x12  Address - LED device
