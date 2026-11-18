@@ -24,7 +24,8 @@ Commands entered directly at the BASIC prompt.
   in increments of 10.
   Explicit line numbers are preserved.
   LIST displays program lines in ascending line-number order.
-  RENUM renumbers the entire program and updates line references.
+  RENUM renumbers the entire program, updates line references and sorts program lines by their existing line numbers before assigning new sequential line numbers. Execution order is therefore determined by line numbers, not by the order in which lines were entered.
+
 
 3. KEYBOARD SHORTCUTS
 
@@ -293,11 +294,35 @@ Notes:
   @SER LISTPORTS
       List available COM ports
 
-  @SER LED adr ON
-      Switch the specified LED on
+  @SER ADR CMD VAL
+      Send a generic command to the serial controller.
 
-  @SER LED adr OFF
-      Switch the specified LED off
+      ADR   Device address (0–255)
+      CMD   Command code (0–255)
+      VAL   Command value (0–255)
+
+      The command is transmitted using the BASIC-58
+      five-byte serial protocol:
+
+        0x19 | ADR | CMD | VAL | 0x58
+
+	  Parameters can be numeric literals, variables
+      or parenthesized numeric expressions.
+
+      Examples:
+
+        10 LET LED = 18
+        20 LET CMD = 4
+        30 LET STATE = 1
+        40 @SER LED CMD STATE
+        50 @SER LED (2 + 2) STATE
+
+      Expressions containing spaces must be enclosed
+      in parentheses.
+
+      All three parameters must evaluate to integer
+      values in the range 0-255.
+      Exactly three parameters are required.
 
   ASSIGN variable
       Wait for the next external numeric value.
@@ -315,7 +340,5 @@ Notes:
       program execution stops with:
 
         ?SERIAL CONNECTION LOST
-
-
 ==================================================
 END OF HELP

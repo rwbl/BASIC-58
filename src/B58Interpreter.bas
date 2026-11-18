@@ -1046,8 +1046,26 @@ Private Sub ContinueProgram
 			' BASIC-58 serial commands
 			Case UpperLine.StartsWith("@SER")
 
+				Dim Device As String = ""
+
+				Dim Parts() As String = Regex.Split(" ", LineCode.Trim)
+
+				If Parts.Length >= 2 Then Device = Parts(1).ToUpperCase
+
+				If Device = "CONNECT" Or _
+					Device = "DISCONNECT" Or _ 
+					Device = "LISTPORTS" Then
+					WaitingForHardwareCommand = True
+					RaiseHardwareCommand(LineCode)
+					Return
+				End If
+
+				If PrepareSerialCommand(LineCode) = False Then
+					If HandleProgramError("?ILLEGAL EXPRESSION IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
 				WaitingForHardwareCommand = True
-				RaiseHardwareCommand(LineCode)
 				Return
 
 			Case UpperLine.StartsWith("@")
@@ -3813,3 +3831,72 @@ Public Sub SubmitExternalData(Value As String)
 
 End Sub
 #End Region
+
+Private Sub PrepareSerialCommand(Command As String) As Boolean
+
+	Dim Parts As List
+	Parts.Initialize
+
+	Dim Text As String = Command.Trim
+	Dim Position As Int = 4
+
+	Do While Position < Text.Length And Parts.Size < 3
+
+		'Skip spaces.
+		Do While Position < Text.Length And Text.SubString2(Position, Position + 1) = " "
+			Position = Position + 1
+		Loop
+
+		If Position >= Text.Length Then Exit
+
+		Dim StartPos As Int = Position
+		Dim Level As Int = 0
+
+		'Read one parameter.
+		Do While Position < Text.Length
+
+			Dim Ch As String = Text.SubString2(Position, Position + 1)
+
+			If Ch = "(" Then
+				Level = Level + 1
+			Else If Ch = ")" Then
+				Level = Level - 1
+				If Level < 0 Then Return False
+			Else If Ch = " " And Level = 0 Then
+				Exit
+			End If
+
+			Position = Position + 1
+		Loop
+
+		If Level <> 0 Then Return False
+
+		Dim Expression As String = Text.SubString2(StartPos, Position).Trim
+		If Expression = "" Then Return False
+
+		Dim Value As Double = EvaluateNumericExpression(Expression)
+
+		If ExprError Then Return False
+
+		If Value < 0 Or Value > 255 Or Value <> Floor(Value) Then Return False
+
+		Parts.Add(Value)
+
+	Loop
+
+	If Parts.Size <> 3 Then Return False
+
+	'No additional parameters allowed.
+	Do While Position < Text.Length
+		If Text.SubString2(Position, Position + 1) <> " " Then Return False
+		Position = Position + 1
+	Loop
+
+	Dim NormalizedCommand As String = _
+        "@SER " & Parts.Get(0) & " " & Parts.Get(1) & " " & Parts.Get(2)
+
+	RaiseHardwareCommand(NormalizedCommand)
+
+	Return True
+
+End Sub

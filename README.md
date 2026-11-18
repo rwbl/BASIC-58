@@ -176,6 +176,8 @@ RENUM 100,5
 ```
 Numeric and string data are supported.
 
+> RENUM sorts program lines by their existing line numbers before assigning new sequential line numbers. Execution order is therefore determined by line numbers, not by the order in which lines were entered.
+
 ---
 
 ### Editing program lines
@@ -690,11 +692,56 @@ Its simple structure makes it possible to communicate with different devices and
 @SER CONNECT COMx
 @SER DISCONNECT
 @SER LISTPORTS
-@SER LED adr ON
-@SER LED adr OFF
+@SER ADR CMD VAL
+```
+ADR   Device address (0–255)
+CMD   Command code (0–255)
+VAL   Command value (0–255)
+
+All three parameters accept numeric literals, numeric
+variables or parenthesized numeric expressions.
+
+The command is transmitted using the BASIC-58
+five-byte serial protocol:
+
+```
+0x19 | ADR | CMD | VAL | 0x58
 ```
 
-These commands provide serial connection management and basic hardware control.
+Example:
+```
+10 @SER CONNECT COM10
+20 @SER 18 4 1
+30 @DELAY 1000
+40 @SER 18 4 0
+50 @SER DISCONNECT
+```
+Or
+```
+10 @SER CONNECT COM10
+20 LET LED = 18
+30 LET CMD = 4
+40 LET STATE = 1
+50 @SER LED CMD STATE
+60 @SER LED (2 + 2) STATE
+70 @SER DISCONNECT
+80 END
+```
+
+Exactly three parameters are required.
+
+Expressions containing spaces must be enclosed in
+parentheses.
+
+Each parameter must evaluate to an integer between
+0 and 255.
+
+The serial transport and protocol remain independent
+of the meaning of individual commands. The connected
+controller determines how each command is interpreted.
+
+These commands provide serial connection management and 
+basic hardware control.
 
 ### External data acquisition
 

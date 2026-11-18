@@ -22,6 +22,6 @@ ModuleClosedNodes4=
 ModuleClosedNodes5=
 ModuleClosedNodes6=
 ModuleClosedNodes7=
-NavigationStack=B58Serial,ProcessIncomingFrame,176,0,B58Serial,AStreams_Error,202,0,B58Serial,Disconnect,90,0,B58Interpreter,RaiseHardwareCommand,3148,0,B58Interpreter,GetDelayMilliseconds,3140,0,B58Interpreter,ResumeHardwareCommand,3155,0,B58Interpreter,ExternalDataDisconnected,3166,0,B4XMainPage,Serial_CommandError,776,0,B4XMainPage,Serial_Disconnected,776,0,B4XMainPage,Serial_NoPortsFound,792,0
+NavigationStack=B58Interpreter,GetProgramText,3670,0,B58Interpreter,SubmitExternalData,3815,0,B58Interpreter,PrepareSerialCommand,3867,0,B58Interpreter,ContinueProgram,1046,0,B58Interpreter,GetNumericTargetValue,3569,0,B58Interpreter,LoadProgram,163,0,B58Interpreter,RaiseReady,115,0,B58Interpreter,ExecuteCommand,231,0,B58Interpreter,RunProgram,229,0,B58Interpreter,ExecuteRenumber,3614,0
 SelectedBuild=0
 VisibleModules=1,2,3,4,5,7

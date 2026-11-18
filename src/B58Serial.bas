@@ -302,34 +302,6 @@ Public Sub ExecuteCommand(Command As String)
 
 			Disconnect
 
-		Case "LED"
-			If Parts.Length <> 4 Then
-				CallSub2(mCallback, mEventName & "_CommandError", "Usage: @SER LED 18 ON/OFF")
-				Return
-			End If
-
-			Dim Adr As Int = -1
-			If IsNumber(Parts(2)) Then Adr = Parts(2)
-
-			If Adr <> B58Protocol.ToUnsigned(B58Protocol.LEDD4_ADR) Then
-				CallSub2(mCallback, mEventName & "_CommandError", "Unknown LED address.")
-				Return
-			End If
-
-			Dim Val As Byte
-
-			Select Parts(3).ToUpperCase
-				Case "ON"
-					Val = B58Protocol.STATE_ON
-				Case "OFF"
-					Val = B58Protocol.STATE_OFF
-				Case Else
-					CallSub2(mCallback, mEventName & "_CommandError", "Invalid LED state. Use ON or OFF.")
-					Return
-			End Select
-
-			SendCommand(B58Protocol.LEDD4_ADR, B58Protocol.CMD_LED_SET_STATE, Val)
-
 		Case "LISTPORTS"
 			If Parts.Length <> 2 Then
 				CallSub2(mCallback, mEventName & "_CommandError", "Usage: @SER LISTPORTS")
@@ -346,7 +318,26 @@ Public Sub ExecuteCommand(Command As String)
 			CallSub2(mCallback, mEventName & "_PortsFound", Ports)
 
 		Case Else
-			CallSub2(mCallback, mEventName & "_CommandError", "Unknown serial command.")
+			If Parts.Length <> 4 Then
+				CallSub2(mCallback, mEventName & "_CommandError", "Usage: @SER ADR CMD VAL")
+				Return
+			End If
+
+			If IsNumber(Parts(1)) = False Or IsNumber(Parts(2)) = False Or IsNumber(Parts(3)) = False Then
+				CallSub2(mCallback, mEventName & "_CommandError", "ADR, CMD and VAL must be numeric.")
+				Return
+			End If
+
+			Dim Adr As Int = Parts(1)
+			Dim Cmd As Int = Parts(2)
+			Dim Val As Int = Parts(3)
+
+			If Adr < 0 Or Adr > 255 Or Cmd < 0 Or Cmd > 255 Or Val < 0 Or Val > 255 Then
+				CallSub2(mCallback, mEventName & "_CommandError", "ADR, CMD and VAL must be in the range 0-255.")
+				Return
+			End If
+
+			SendCommand(Adr, Cmd, Val)
 
 	End Select
 
