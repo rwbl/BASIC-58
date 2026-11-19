@@ -1,0 +1,58 @@
+﻿AppType=StandardJava
+Build1=Default,b4j.example
+Group=Default Group
+Library1=byteconverter
+Library2=jcore
+Library3=jrandomaccessfile
+Library4=jserial
+Library5=javaobject
+Module1=|relative|..\B4XLib\Source\B58Help
+Module2=|relative|..\B4XLib\Source\B58Interpreter
+Module3=|relative|..\B4XLib\Source\B58Protocol
+Module4=|relative|..\B4XLib\Source\B58Serial
+Module5=|relative|..\B4XLib\Source\B58System
+Module6=|relative|..\B4XLib\Source\Utils
+NumberOfFiles=0
+NumberOfLibraries=5
+NumberOfModules=6
+Version=10.7
+@EndOfDesignText@
+' ================================================================
+' Main Module:	Main
+' Project:		BASIC-58
+' Brief:		Library entry point for jBASIC58.
+' Date:			See B4XMainPage Class_Globals VERSION
+' Author:		Robert W.B. Linn (c) 2026 MIT License
+' Description:	Development Non-UI application for creating the jBASIC58 library.
+'				Module responsibilities at a glance
+'				Module			Responsibility
+'				--------------------------------------------------
+'				Main			Application startup
+'				B4XMainPage		User interface
+'				B58Interpreter	BASIC language And execution
+'				B58Protocol		Serial protocol definitions
+'				B58Serial		External hardware communication
+'				B58System		Local system commands
+'				Utils	Shared helper functions
+' DependsOn:	ByteConverter - Helper for conversion routines.
+'				jRandomAccessFile - ASynstreams for extranl communication like serial..
+'				jSerial - Serial communication with f.e. Arduino MCU.
+'				JavaObject - File routines.
+' ================================================================
+
+#Region Project Attributes 
+	#CommandLineArgs:
+	#MergeLibraries: True 
+	#LibraryName: jBASIC58
+	#LibraryVersion: 0.15
+	#LibraryAuthor: Robert W.B. Linn
+#End Region
+
+Sub Process_Globals
+	' Not required
+End Sub
+
+Sub AppStart (Args() As String)
+	' Not required
+End Sub
+

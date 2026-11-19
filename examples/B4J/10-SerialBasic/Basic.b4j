@@ -1,0 +1,114 @@
+﻿AppType=StandardJava
+Build1=Default,b4j.example
+Group=Default Group
+Library1=javaobject
+Library2=jcore
+Library3=jbasic58
+NumberOfFiles=0
+NumberOfLibraries=3
+NumberOfModules=0
+Version=10.7
+@EndOfDesignText@
+' 
+' jBASIC58 Basic Test
+' Program:
+' 10 PRINT "HELLO"
+' 20 End
+' Run:
+' RUNNING...
+' HELLO
+' READY.
+
+#Region Project Attributes 
+	#CommandLineArgs: 
+	#MergeLibraries: True
+#End Region
+
+Sub Process_Globals
+    Private Interpreter As B58Interpreter
+    Private Serial As B58Serial
+    Private System As B58System
+    Private DelayTimer As Timer
+End Sub
+
+Sub AppStart (Args() As String)
+    Log("AppStart")
+
+	' Init the B58 classes with their events in this order (IMPORTANT)
+    Serial.Initialize(Me, "Serial")
+    System.Initialize(Me, "System")
+    DelayTimer.Initialize("DelayTimer", 100)
+	
+    Interpreter.Initialize(Me, "Interpreter")
+
+    ProgramTest
+	' HelpTest
+
+    StartMessageLoop
+End Sub
+
+Sub ProgramTest
+	Dim src As String = $"
+		10 PRINT "HELLO"
+		20 End
+		"$
+	' Log($"[ProgramTest] ${src}"$)
+	Interpreter.LoadProgram(src)
+	Interpreter.RunProgram
+End Sub
+
+Sub HelpTest	'ignore
+	Interpreter.ExecuteHelp
+End Sub
+
+' ----------------------------------------------------------------
+' INTERPRETERCALLBACKS
+' ----------------------------------------------------------------
+#Region InterpreterCallbacks
+' Interpreter_Output
+' Write string with newline option to the output textarea.
+Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
+	If Value = "" Then
+		Log("[Interpreter_Output] <empty line>")
+	Else If NewLine Then
+		Log($"[Interpreter_Output] ${Value}"$)
+	Else
+		Log($"[Interpreter_Output] ${Value}"$)
+	End If
+End Sub
+
+' Interpreter_Ready
+' Update label status with ready message.
+Private Sub Interpreter_Ready
+	Log($"[Interpreter_Ready]READY"$)
+End Sub
+
+' Interpreter_WaitingForDelay
+' handling DELAY command
+Private Sub Interpreter_WaitingForDelay
+	DelayTimer.Interval = Interpreter.GetDelayMilliseconds
+	DelayTimer.Enabled = True
+End Sub
+
+Private Sub Interpreter_HardwareCommand(Command As String)
+	Serial.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_SystemCommand(Command As String)
+	System.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
+	Log($"[Interpreter_ProgramRenumbered] ${ProgramText}"$)
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' SYSTEM CALLBACKS
+' ----------------------------------------------------------------
+#Region System
+Private Sub System_Output(Message As String)
+	Log($"[System_Output] ${Message}"$)
+End Sub
+#End Region
+

@@ -1,0 +1,10 @@
+10 DIM F(12)
+20 LET F(1) = 0
+30 LET F(2) = 1
+40 FOR I = 3 TO 12
+50 LET F(I) = F(I - 1) + F(I - 2)
+60 NEXT I
+70 FOR I = 1 TO 12
+80 PRINT F(I)
+90 NEXT I
+100 END

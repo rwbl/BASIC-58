@@ -1,0 +1,143 @@
+﻿Build1=Default,B4RDev
+Group=Default Group
+Library1=rcommuart
+Library2=rcore
+Module1=|relative|..\..\src\B58Protocol
+NumberOfFiles=0
+NumberOfLibraries=2
+NumberOfModules=1
+Version=4.2
+@EndOfDesignText@
+'==============================================
+' Project:		BASIC-58
+' Brief:		BASIC-58 controller controlled by the BASIC-58 MCU Bridge
+' Date:			2026-11-17
+' Author: 		Robert W.B. Linn (c) 2026 MIT
+' Description:	Set the state of a connected LED to on (1) or OFF(0) via serial line command.
+' Protocol:		See B58Protocol.
+' DependsOn:	rCommUart v1.10 or higher
+' IMPORTANT:	Use IDE Log ONLY for Errors.
+' Hardware:		Arduino UNO
+' Software:		B4R 4.00 (64 bit)
+' Wiring:		MCU = LED (DFRobot): D4 = Signal - White; 5V = VCC; GND = GND
+'==============================================
+
+#Region Project Attributes
+	#AutoFlushLogs: True
+	#CheckArrayBounds: True
+	#StackBufferSize: 600
+#End Region
+
+Sub Process_Globals
+	Public SerialLine 			As Serial			' UART0 (Port 0)
+
+	' Devices	
+	' GPIO
+	Private LedD4 				As Pin				' See B58 protocol
+
+	' Sensors
+	Private Const TEMP_ADDRESS As Byte = 0x20
+	Private Const TEMP_COMMAND As Byte = 0x01
+	
+	' Simulation Timer
+	Private SimTimer 			As Timer	
+	
+	' Helper
+	Private bc					As ByteConverter	'ignore. For testing only, i.e. write to log
+End Sub
+
+Private Sub AppStart
+	' Init serial line first (always do that)
+	SerialLine.Initialize(115200)
+	
+	' Init GPIO
+	LedD4.Initialize(B58Protocol.LEDD4_PINNR, LedD4.MODE_OUTPUT)
+	LedD4.DigitalWrite(False)
+	
+	' Init CommUART instance
+	CommUart.Initialize(SerialLine.Stream, B58Protocol.FRAME_SIZE)
+
+	SimTimer.Initialize("SimTimer_Tick", 2000)
+	SimTimer.Enabled = True
+End Sub
+
+'----------------------------------------------
+' TEST ROUTINES
+'----------------------------------------------
+
+' Test(B58Protocol.LEDD4_ADR, B58Protocol.CMD_LED_SET_STATE, B58Protocol.STATE_ON)
+' Delay(2000)
+' Test(B58Protocol.LEDD4_ADR, B58Protocol.CMD_LED_SET_STATE, B58Protocol.STATE_OFF)
+Private Sub Test(adr As Byte, cmd As Byte, val As Byte)	'ignore
+	CommUART_OnReceived(B58Protocol.CreateFrame(adr, cmd, val))
+End Sub
+
+'----------------------------------------------
+' COMMUART
+'----------------------------------------------
+Sub SimTimer_Tick
+	'Generate a temperature between 18 and 30 degrees.
+	Dim TempValue As Byte = Rnd(18, 31)
+
+	'Create and transmit the five-byte frame.
+	Dim Frame() As Byte = B58Protocol.CreateFrame(TEMP_ADDRESS, TEMP_COMMAND, TempValue)
+'	Log("[SimTimer] data=", bc.HexFromBytes(Frame), ", t=", TempValue)
+
+	CommUART_Write(Frame)
+	
+End Sub
+
+'----------------------------------------------
+' COMMUART
+'----------------------------------------------
+
+' CommUART_OnReceived
+' Handle new data from the client.
+' Parameter:
+'	buffer - byte array received
+Public Sub CommUART_OnReceived(frame() As Byte)
+	' Log("[CommUART_OnReceived] frame len=", frame.Length, ", hex=", bc.HexFromBytes(frame))
+
+	If Not(B58Protocol.CheckFrame(frame)) Then Return
+
+	Dim adr As Byte = B58Protocol.GetAdr(frame)
+	Dim cmd As Byte = B58Protocol.GetCmd(frame)
+	Dim val As Byte = B58Protocol.GetVal(frame)
+
+	Select adr
+		Case B58Protocol.LEDD4_ADR
+			Select cmd
+				Case B58Protocol.CMD_LED_SET_STATE
+					If val = B58Protocol.STATE_OFF Or val = B58Protocol.STATE_ON Then
+						LedD4.DigitalWrite(val = B58Protocol.STATE_ON)
+
+						' Acknowledge successful command by echoing the frame.
+						CommUART_Write(B58Protocol.CreateFrame(adr, cmd, val))
+					Else
+						' Invalid LED state.
+						CommUART_Write(B58Protocol.CreateFrame(adr, cmd, B58Protocol.STATE_ERR))
+					End If
+
+				Case Else
+					' Unsupported command.
+					CommUART_Write(B58Protocol.CreateFrame(adr, cmd, B58Protocol.STATE_ERR))
+			End Select
+
+		Case Else
+			' Unknown device address.
+			CommUART_Write(B58Protocol.CreateFrame(adr, cmd, B58Protocol.STATE_ERR))
+	End Select
+End Sub
+
+' CommUART_OnError
+Public Sub CommUART_OnError
+	Log("[Main.CommUART_OnError][E]")
+End Sub
+
+' CommUART_Write
+' Write data to the connected client.
+' Parameter:
+'	data - Byte array with framesize length
+Private Sub CommUART_Write(data() As Byte)
+	CommUart.Write(data)
+End Sub

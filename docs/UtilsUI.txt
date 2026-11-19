@@ -1,0 +1,22 @@
+Public Sub ScrollTextToBottom(Target As B4XView) As ResumableSub
+	Sleep(50)
+
+	Dim NativeTextArea As JavaObject = Target
+	NativeTextArea.RunMethod("setScrollTop", Array(100000.0))
+
+	Return True
+End Sub
+
+Public Sub ScrollTextToTop(Target As B4XView) As ResumableSub
+	Sleep(50)
+
+	Dim NativeTextArea As JavaObject = Target
+	NativeTextArea.RunMethod("setScrollTop", Array(0.0))
+
+	Return True
+End Sub
+
+Public Sub ComboBoxSetPromptText(box As ComboBox, text As String)
+	Dim joCB As JavaObject = box
+	joCB.RunMethod("setPromptText", Array(text))
+End Sub
