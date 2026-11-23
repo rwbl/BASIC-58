@@ -1,0 +1,209 @@
+﻿AppType=StandardJava
+Build1=Default,b4j.example
+Group=Default Group
+Library1=byteconverter
+Library2=javaobject
+Library3=jcore
+Library4=basic58
+NumberOfFiles=0
+NumberOfLibraries=4
+NumberOfModules=0
+Version=10.7
+@EndOfDesignText@
+' ================================================================
+' Main Module:	ConsoleSerial
+' Project:		BASIC-58
+' Brief:		Turn LED connected to an Arduino On/Off via serial line.	
+' Date:			20261122
+' Author:		Robert W.B. Linn (c) 2026 MIT License
+' Description:	
+' Log:
+' ================================================================
+
+#Region Project Attributes 
+	#CommandLineArgs: 
+	#MergeLibraries: True
+#End Region
+
+Sub Process_Globals
+    Private Interpreter As B58Interpreter
+    Private Serial As B58Serial
+    Private System As B58System
+    Private DelayTimer As Timer
+	
+	Private bc As ByteConverter
+End Sub
+
+Sub AppStart (Args() As String)
+    Log("AppStart")
+
+	' Init the B58 classes with their events in this order (IMPORTANT)
+    Serial.Initialize(Me, "Serial")
+    System.Initialize(Me, "System")
+    DelayTimer.Initialize("DelayTimer", 100)
+	
+    Interpreter.Initialize(Me, "Interpreter")
+
+    ListPorts
+	
+	'Connect
+	SendCommand
+
+    StartMessageLoop
+End Sub
+
+'AppStart
+'[Interpreter_Output] <empty line>
+'[Interpreter_Output] RUNNING...
+'[Interpreter_Output] <empty line>
+'AVAILABLE Serial PORTS:
+'COM10
+Sub ListPorts	' Passed
+	Dim src As String = $"
+		10 @SER LISTPORTS
+		20 End
+		"$
+	' Log($"[ProgramTest] ${src}"$)
+	Interpreter.LoadProgram(src)
+	Interpreter.RunProgram
+End Sub
+
+Sub Connect	'ignored Passed
+	Dim src As String = $"
+		10 @SER CONNECT COM10
+		20 @DELAY 2000
+		30 @SER DISCONNECT
+		40 End
+		"$
+	' Log($"[ProgramTest] ${src}"$)
+	Interpreter.LoadProgram(src)
+	Interpreter.RunProgram
+End Sub
+
+Sub SendCommand	'ignore
+	Dim src As String = $"
+		10 @SER CONNECT COM3
+		20 @SER 18 4 1
+		30 @DELAY 2000
+		40 @SER 18 4 0
+		50 @SER DISCONNECT
+		60 End
+		"$
+	' Log($"[ProgramTest] ${src}"$)
+	Interpreter.LoadProgram(src)
+	Interpreter.RunProgram
+End Sub
+
+' ----------------------------------------------------------------
+' INTERPRETERCALLBACKS
+' ----------------------------------------------------------------
+#Region InterpreterCallbacks
+' Interpreter_Output
+' Write string with newline option to the output textarea.
+Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
+	If Value = "" Then
+		Log("[Interpreter_Output] <empty line>")
+	Else If NewLine Then
+		Log($"[Interpreter_Output] ${Value}"$)
+	Else
+		Log($"[Interpreter_Output] ${Value}"$)
+	End If
+End Sub
+
+' Interpreter_Ready
+' Update label status with ready message.
+Private Sub Interpreter_Ready
+	Log($"[Interpreter_Ready]READY"$)
+End Sub
+
+' Interpreter_WaitingForDelay
+' handling DELAY command
+Private Sub Interpreter_WaitingForDelay
+	DelayTimer.Interval = Interpreter.GetDelayMilliseconds
+	DelayTimer.Enabled = True
+End Sub
+
+Private Sub Interpreter_HardwareCommand(Command As String)
+	Serial.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_SystemCommand(Command As String)
+	System.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
+	Log($"[Interpreter_ProgramRenumbered] ${ProgramText}"$)
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' SYSTEM CALLBACKS
+' ----------------------------------------------------------------
+#Region System
+Private Sub System_Output(Message As String)
+	Log($"[System_Output] ${Message}"$)
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' SERIAL CALLBACKS
+' ----------------------------------------------------------------
+#Region B58Serial
+Private Sub Serial_Connected
+	Log("[BASIC-58] Controller connected.")
+	Sleep(2000) ' Allow Arduino UNO reset
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_CommandCompleted(Frame() As Byte)
+	Log($"[BASIC-58] ACK received: ${bc.HexFromBytes(Frame)}"$)
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_CommandError(Message As String)
+	Log("[BASIC-58][E] " & Message)
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_Disconnected
+	Log("[BASIC-58] Controller disconnected.")
+	Interpreter.ResumeHardwareCommand
+	Interpreter.ExternalDataDisconnected
+End Sub
+
+Private Sub Serial_Error(Message As String)
+	Log("[BASIC-58][E] " & Message)
+End Sub
+
+Private Sub Serial_PortsFound(Ports As List)
+	Log("AVAILABLE SERIAL PORTS:")
+	For Each Port As String In Ports
+		Log(Port)
+	Next
+End Sub
+
+Private Sub Serial_NoPortsFound
+	Log("NO SERIAL PORTS FOUND.")
+End Sub
+
+Private Sub Serial_DataReceived(Frame() As Byte)
+
+	Dim Adr As Byte = B58Protocol.GetAdr(Frame)
+	Dim Cmd As Byte = B58Protocol.GetCmd(Frame)
+	Dim Val As Byte = B58Protocol.GetVal(Frame)
+
+	Log($"[BASIC-58] Received: ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
+
+	Interpreter.SubmitExternalData( _
+    	B58Protocol.ToUnsigned(Adr), _
+    	B58Protocol.ToUnsigned(Cmd), _
+    	B58Protocol.ToUnsigned(Val))
+End Sub
+#End Region
+
+#Region Delay
+Private Sub DelayTimer_Tick
+	DelayTimer.Enabled = False
+	Interpreter.ResumeProgram
+End Sub
+#End Region

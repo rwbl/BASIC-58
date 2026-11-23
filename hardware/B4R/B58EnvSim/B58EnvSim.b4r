@@ -2,7 +2,7 @@
 Group=Default Group
 Library1=rcommuart
 Library2=rcore
-Module1=|relative|..\..\src\B58Protocol
+Module1=|relative|..\..\..\library\B4XLib\Source\B58Protocol
 NumberOfFiles=0
 NumberOfLibraries=2
 NumberOfModules=1

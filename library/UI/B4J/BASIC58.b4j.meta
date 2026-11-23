@@ -25,6 +25,6 @@ ModuleClosedNodes5=
 ModuleClosedNodes6=
 ModuleClosedNodes7=
 ModuleClosedNodes8=
-NavigationStack=B4XMainPage,Class_Globals,28,0,Utils,FormatNumber,25,0
+NavigationStack=B4XMainPage,ShowEasterEgg,863,1,B4XMainPage,ShowWelcomMessage,837,0,B4XMainPage,ShowHints,855,0,B4XMainPage,Class_Globals,47,0,B4XMainPage,B4XPage_CloseRequest,141,0,B4XMainPage,ApplyUIStyle,188,0,B4XMainPage,Toolbar_Click,355,0,B4XMainPage,B4XPage_Created,94,0,B4XMainPage,Interpreter_Output,297,0,B4XMainPage,MainKeyPressed_Filter,289,6,B58Help,Process_Globals,51,6
 SelectedBuild=0
 VisibleModules=1,7,2,3,4,5,6,8

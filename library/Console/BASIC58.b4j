@@ -2,10 +2,11 @@
 Build1=Default,b4j.example
 Group=Default Group
 Library1=byteconverter
-Library2=jcore
-Library3=jrandomaccessfile
-Library4=jserial
-Library5=javaobject
+Library2=javaobject
+Library3=jcore
+Library4=jrandomaccessfile
+Library5=jserial
+Library6=json
 Module1=|relative|..\B4XLib\Source\B58Help
 Module2=|relative|..\B4XLib\Source\B58Interpreter
 Module3=|relative|..\B4XLib\Source\B58Protocol
@@ -13,7 +14,7 @@ Module4=|relative|..\B4XLib\Source\B58Serial
 Module5=|relative|..\B4XLib\Source\B58System
 Module6=|relative|..\B4XLib\Source\Utils
 NumberOfFiles=0
-NumberOfLibraries=5
+NumberOfLibraries=6
 NumberOfModules=6
 Version=10.7
 @EndOfDesignText@
@@ -43,16 +44,317 @@ Version=10.7
 #Region Project Attributes 
 	#CommandLineArgs:
 	#MergeLibraries: True 
-	#LibraryName: jBASIC58
-	#LibraryVersion: 0.15
-	#LibraryAuthor: Robert W.B. Linn
 #End Region
 
 Sub Process_Globals
-	' Not required
+	' BASIC-58 Instances (mandatory)
+	' Interpreter
+	Private Interpreter As B58Interpreter
+	' Serial Communication
+	Private Serial As B58Serial
+	' System
+	Private System As B58System
+
+	' Helper
+	Private bc As ByteConverter
 End Sub
 
 Sub AppStart (Args() As String)
-	' Not required
+	' 	' BASIC-58
+	' Interpreter with event prefix Interpreter
+	Interpreter.Initialize(Me, "Interpreter")
+
+	' Serial communication with event prefix Serial
+	Serial.Initialize(Me, "Serial")
+
+	' System commands
+	System.Initialize(Me, "System")
+
+	' Tests
+	' TestProgram
+	CallSubDelayed(Me, "TestSerial")
+	' TestHost
+	' TestHostSerial
+
+	' Mandatory
+	StartMessageLoop
 End Sub
 
+Private Sub Stop
+	StopMessageLoop
+End Sub
+
+' ----------------------------------------------------------------
+' TESTS
+' ----------------------------------------------------------------
+
+#Region TestProgram
+' TestProgram
+' Output:
+'[TestProgram] Start
+'[TestProgram] source
+'	10 PRINT "HELLO WORLD"
+'	20 End
+'	
+'[TestProgram] Completed
+'[Interpreter_Output] 
+'[Interpreter_Output] RUNNING...
+'[Interpreter_Output] 
+'[Interpreter_Output] HELLO WORLD
+'[Interpreter_Output] 
+'[Interpreter_Output] READY.
+'[Interpreter_Ready] READY
+Private Sub TestProgram	'ignore
+	Log("[TestProgram] Start")
+
+	Dim source As String = $"
+10 PRINT "HELLO WORLD"
+20 END
+	"$
+
+	Log($"[TestProgram] source"$)
+	Log(source)
+
+	' Load the program
+	Interpreter.LoadProgram(source)
+	
+	' Run the program
+	Interpreter.ExecuteCommand("RUN")
+	
+	' Output Terminal > IDE
+	' Handled by callbacks > see Interpreter_Output
+	
+	Log("[TestProgram] Completed")
+	Stop
+End Sub
+#End Region
+
+#Region TestSerial
+Private Sub TestSerial	'ignore
+	Log("[TestSerial] Start")
+
+	Dim source As String = $"
+5 PRINT "START"
+10 @SER CONNECT COM3
+20 PRINT "WAITING FOR TEMPERATURE..."
+30 ASSIGN TEMP
+40 PRINT "TEMPERATURE: "; TEMP
+50 @SER DISCONNECT
+55 PRINT "STOP"
+60 END
+	"$
+	'Log($"[TestSerial] source"$)
+	'Log(source)
+
+	' Load the program
+	Interpreter.LoadProgram(source)
+	
+	' Run the program
+	Interpreter.ExecuteCommand("RUN")
+	
+	' Output Terminal > IDE
+	' Handled by callbacks > see Interpreter_Output
+	
+'	Log("[TestSerial] Completed")
+'	Stop
+End Sub
+#End Region
+
+#Region TestHost
+' Flow:
+' 1. Host → BASIC-58: LEVEL = 20
+' 2. BASIC-58: Evaluates the tank level And decides To start the pump.
+' 3. BASIC-58 → Host: Raises HostStateChanged("PUMP", 1).
+' 4. Host: Receives the event And handles the pump request.
+'
+' Other tests: 
+' If changing to 90 > high level > stop the pump
+' If changing to 50 > no action because level in range
+'
+' Log
+'[TestHost] Start
+'[TestHost] Host reads LEVEL: 20.0
+'[Interpreter_Output] 
+'[Interpreter_Output] RUNNING...
+'[Interpreter_Output] 
+'[Interpreter_Output] TANK LEVEL CONTROL
+'[Interpreter_Output] LEVEL: 20 %
+'[Interpreter_Output] LOW LEVEL - START PUMP
+'[HostStateChanged] PUMP = 1.0
+'[HOST] Pump ON requested
+'[Interpreter_Output] 
+'[Interpreter_Output] READY.
+'[Interpreter_Ready] READY
+Private Sub TestHost    'ignore
+	Log("[TestHost] Start")
+
+	' =================================================
+	' STEP 1: HOST -> BASIC-58
+	' The host application supplies the tank level.
+	' In a real application, this value could come from
+	' a sensor, OPC UA, MQTT, or another data source.
+	' =================================================
+	Interpreter.SetVariable("LEVEL", 50)
+
+	' =================================================
+	' STEP 2: DEFINE THE BASIC-58 CONTROL PROGRAM
+	' BASIC-58 evaluates the tank level:
+	'
+	' LEVEL < 30 : Request pump ON
+	' LEVEL > 80 : Request pump OFF
+	' Otherwise  : No action
+	' =================================================
+	Dim Source As String = $"
+10 PRINT "TANK LEVEL CONTROL"
+20 PRINT "LEVEL: "; LEVEL; " %"
+30 IF LEVEL < 30 THEN 100
+40 IF LEVEL > 80 THEN 200
+50 END
+100 PRINT "LOW LEVEL - START PUMP"
+110 @HOST STATE "PUMP" 1
+120 END
+200 PRINT "HIGH LEVEL - STOP PUMP"
+210 @HOST STATE "PUMP" 0
+220 END
+"$
+
+	' =================================================
+	' STEP 3: HOST -> INTERPRETER
+	' Load the BASIC-58 program and execute it.
+	' =================================================
+	Interpreter.LoadProgram(Source)
+	Interpreter.ExecuteCommand("RUN")
+
+	' =================================================
+	' STEP 4: HOST READS A BASIC-58 VARIABLE
+	' The host can retrieve the current value after
+	' BASIC-58 has executed its control logic.
+	' =================================================
+	Log($"[TestHost] Host reads LEVEL: ${Interpreter.GetVariable("LEVEL")}"$)
+
+	Stop
+End Sub
+#End Region
+
+' =====================================================
+' STEP 5: BASIC-58 -> HOST
+' BASIC-58 raises this event when it executes
+' an @HOST STATE command.
+'
+' Name  : State name, for example "PUMP"
+' Value : Requested state, for example 1 = ON, 0 = OFF
+'
+' The host application decides what to do with the event.
+' =====================================================
+Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
+	Log($"[Main.HostStateChanged] ${Name} = ${Value}"$)
+
+	If Name = "PUMP" Then
+		If Value = 1 Then
+			Log("[HOST] Pump ON requested")
+		Else
+			Log("[HOST] Pump OFF requested")
+		End If
+	End If
+End Sub
+
+#Region TestHostSerial
+Private Sub TestHostSerial    'ignore
+	Log("[TestHostSerial] Start")
+
+	' =================================================
+	' STEP 1: DEFINE THE BASIC-58 PROGRAM
+	' =================================================
+	Dim Source As String = $"
+10 @SER CONNECT COM3
+20 PRINT "WAITING FOR TEMPERATURE..."
+30 ASSIGN TEMP
+40 PRINT "TEMPERATURE: "; TEMP
+50 @SER DISCONNECT
+60 END
+"$
+
+	' =================================================
+	' STEP 2: LOAD AND RUN THE PROGRAM
+	' BASIC-58 connects to the serial device and waits
+	' for the temperature measurement.
+	' =================================================
+	Interpreter.LoadProgram(Source)
+	Interpreter.ExecuteCommand("RUN")
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' INTERPRETERCALLBACKS
+' ----------------------------------------------------------------
+#Region InterpreterCallbacks
+' Interpreter_Output
+' Write string with newline option to the output textarea.
+Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
+	Log($"[Main.Interpreter_Output] ${Value}"$)
+End Sub
+
+' Interpreter_Ready
+' Update label status with ready message.
+Private Sub Interpreter_Ready
+	Log($"[Main.Interpreter_Ready] READY"$)
+
+    Dim Temperature As Double = Interpreter.GetVariable("TEMP")
+    Log($"[HOST] Temperature received: ${Temperature}"$)
+End Sub
+
+' Interpreter_WaitingForDelay
+' handling DELAY command
+Private Sub Interpreter_WaitingForDelay
+	Log($"[Main.Interpreter_WaitingForDelay] delay=${Interpreter.GetDelayMilliseconds}"$)
+End Sub
+
+Private Sub Interpreter_HardwareCommand(Command As String)
+	Log($"[Main.Interpreter_HardwareCommand] ${Command}"$)
+	Serial.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_SystemCommand(Command As String)
+	Log($"[Main.Interpreter_SystemCommand] ${Command}"$)
+	System.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
+	Log($"[Main.Interpreter_ProgramRenumbered]"$)
+	Log(ProgramText)
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' SYSTEM CALLBACKS
+' ----------------------------------------------------------------
+#Region System
+Private Sub System_Output(Message As String)
+	Log($"[Main.System_Output] ${Message}"$)
+End Sub
+#End Region
+
+#Region Serial
+Private Sub Serial_Connected
+	Log("[Main.Serial_Connected]")
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_Disconnected
+	Log("[Main.Serial_Disconnected]")
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_DataReceived(buffer() As Byte)
+	Log($"[Main.Serial_DataReceived] ${bc.HexFromBytes(buffer)}"$)
+	Interpreter.SubmitExternalData(buffer(1), buffer(2), buffer(3))
+End Sub
+
+Private Sub Serial_CommandCompleted(buffer() As Byte)
+	Log($"[Main.Serial_CommandCompleted] ${bc.HexFromBytes(buffer)}"$)
+End Sub
+
+Private Sub Serial_CommandError
+	Log($"[Main.Serial_CommandError]"$)
+End Sub
+#End Region

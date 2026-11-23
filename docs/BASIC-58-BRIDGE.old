@@ -1,0 +1,634 @@
+Absolutely. I would turn your notes into a proper **BASIC-58 Host Bridge README**, documenting both the interface and the complete communication concept.
+
+One important distinction deserves particular attention: `SetVariable` supplies values before execution, while `@HOST STATE` sends notifications from BASIC-58 to the host during execution. `GetVariable` is a separate way to read the interpreter's current variable values.
+
+I've also included the three tested tank scenarios and the current implementation limitations. The following is ready to save as `README.md` in GitHub Markdown.
+
+# **BASIC-58 Host Bridge**
+
+## **Overview**
+
+The BASIC-58 Host Bridge allows an external application to communicate directly with the BASIC-58 interpreter.
+
+It makes it possible to use BASIC-58 as an embedded scripting engine inside another application.
+
+The host application supplies numeric data to the interpreter. BASIC-58 processes this data using its own program logic and can send state-change notifications back to the host.
+
+This provides a simple way to separate application logic from application-specific hardware and communication interfaces.
+
+For example, a B4J application could use BASIC-58 to implement control logic for a small automation system:
+
+- The host reads a tank level from a sensor or an external system.
+- The host supplies the measured value to BASIC-58.
+- BASIC-58 evaluates the tank level and decides whether a pump should run.
+- BASIC-58 sends a pump state request to the host.
+- The host performs the actual operation, for example through OPC UA, MQTT, serial communication or another interface.
+
+**BASIC-58 handles the logic. The host application handles the outside world.**
+
+## **Design principles**
+
+The bridge is deliberately small and independent of the host application's implementation.
+
+Its main principles are:
+
+- Keep the existing BASIC-58 interpreter and execution model intact.
+- Do not introduce dependencies on specific communication protocols.
+- Keep the host interface simple.
+- Use normal BASIC-58 variables for program logic.
+- Let the host application decide how to handle notifications.
+- Avoid unnecessary changes to existing BASIC-58 language syntax.
+
+The bridge does not require the interpreter to know whether the host application uses OPC UA, MQTT, Arduino, databases, sensors or any other external system.
+
+## **Communication model**
+
+The bridge provides three basic communication mechanisms.
+
+| Direction       | Interface     | Purpose                          |
+| --------------- | ------------- | -------------------------------- |
+| Host → BASIC-58 | `SetVariable` | Supply a numeric value           |
+| BASIC-58 → Host | `@HOST STATE` | Send a state-change notification |
+| Host ← BASIC-58 | `GetVariable` | Retrieve a numeric value         |
+
+The communication is based on numeric values and BASIC-58 variables.
+
+### **1. Host → BASIC-58: SetVariable**
+
+The host application supplies a numeric value to the interpreter.
+
+```
+Interpreter.SetVariable("LEVEL", 20)
+```
+
+This stores the supplied value in the interpreter's host-variable map.
+
+When BASIC-58 executes `RUN`, the host-supplied values are copied into the normal BASIC-58 variable map.
+
+The BASIC program can then use these variables like ordinary numeric variables.
+
+For example:
+
+```
+10 PRINT "TANK LEVEL: "; LEVEL
+20 LET LEVEL = LEVEL + 5
+30 END
+```
+
+The host can supply values before starting the program.
+
+**Important:** Host-supplied values are copied into the normal variable map when `RUN` starts. Calling `SetVariable` while a program is already executing does not immediately update its active variable. The new value will be available at the next `RUN`.
+
+### **2. BASIC-58 → Host: @HOST STATE**
+
+BASIC-58 can notify the host application about a state change.
+
+Command syntax:
+
+```
+@HOST STATE "NAME" VALUE
+```
+
+Parameters:
+
+| Parameter | Description                            |
+| --------- | -------------------------------------- |
+| `NAME`    | State name enclosed in quotation marks |
+| `VALUE`   | Numeric value or numeric expression    |
+
+Example:
+
+```
+@HOST STATE "PUMP" 1
+```
+
+This raises the `HostStateChanged` event in the host application.
+
+The host receives:
+
+```
+Name  = "PUMP"
+Value = 1
+```
+
+The notification itself does not control any hardware. The host application decides what action to perform.
+
+For example, it could:
+
+- Switch a physical output.
+- Write a value to an OPC UA variable.
+- Publish an MQTT message.
+- Send a command to an Arduino.
+- Update an application status indicator.
+- Store an event in a database.
+
+The host application is responsible for implementing the actual operation.
+
+**The&#x20;**`@HOST STATE`**&#x20;command raises the host event synchronously during BASIC-58 execution.**
+
+### **3. Host ← BASIC-58: GetVariable**
+
+The host application can retrieve the current value of a BASIC-58 numeric variable.
+
+```
+Dim Level As Double = Interpreter.GetVariable("LEVEL")
+```
+
+The method returns:
+
+- The current value if the variable exists.
+- `0` if the variable does not exist.
+
+This allows the host to read values that BASIC-58 has calculated or modified.
+
+For example:
+
+```
+10 LET LEVEL = LEVEL + 5
+20 END
+```
+
+After the program has finished, the host can retrieve the updated value using `GetVariable`.
+
+## **Host bridge API**
+
+The initial bridge exposes two public methods and one interpreter-to-host notification event.
+
+### **SetVariable**
+
+```
+Public Sub SetVariable(Name As String, Value As Double)
+```
+
+Stores a numeric value supplied by the host application.
+
+| Parameter | Description                        |
+| --------- | ---------------------------------- |
+| `Name`    | BASIC-58 variable name             |
+| `Value`   | Numeric value supplied by the host |
+
+Example:
+
+```
+Interpreter.SetVariable("TEMP", 75)
+Interpreter.SetVariable("LEVEL", 20)
+```
+
+Variable names are case-insensitive and are stored using uppercase names.
+
+The values are copied into the normal interpreter variable map when `RUN` starts.
+
+### **GetVariable**
+
+```
+Public Sub GetVariable(Name As String) As Double
+```
+
+Returns the current value of a BASIC-58 numeric variable.
+
+| Parameter | Description            |
+| --------- | ---------------------- |
+| `Name`    | BASIC-58 variable name |
+
+Return value:
+
+- Current numeric variable value.
+- `0` if the variable does not exist.
+
+Example:
+
+```
+Dim Temperature As Double = Interpreter.GetVariable("TEMP")
+Log(Temperature)
+```
+
+### **HostStateChanged**
+
+The interpreter raises the following event when it executes an `@HOST STATE` command:
+
+```
+Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
+```
+
+| Parameter | Description                              |
+| --------- | ---------------------------------------- |
+| `Name`    | State name supplied by the BASIC program |
+| `Value`   | Numeric state value                      |
+
+The event name follows the normal B4J callback naming convention. For an interpreter initialized with the event name `Interpreter`, the host implements:
+
+```
+Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
+    ' Handle the notification.
+End Sub
+```
+
+The host application decides what to do with the received information.
+
+# **Example: Tank Level Control**
+
+This example demonstrates the complete communication between a B4J host application and the BASIC-58 interpreter.
+
+The host supplies a simulated tank level. BASIC-58 evaluates the measurement and requests a pump state change.
+
+## **1. BASIC-58 control program**
+
+```
+10 PRINT "TANK LEVEL CONTROL"
+20 PRINT "LEVEL: "; LEVEL; " %"
+30 IF LEVEL < 30 THEN 100
+40 IF LEVEL > 80 THEN 200
+50 END
+
+100 PRINT "LOW LEVEL - START PUMP"
+110 @HOST STATE "PUMP" 1
+120 END
+
+200 PRINT "HIGH LEVEL - STOP PUMP"
+210 @HOST STATE "PUMP" 0
+220 END
+```
+
+### **Control logic**
+
+| Tank level | BASIC-58 action  |
+| ---------- | ---------------- |
+| Below 30%  | Request pump ON  |
+| Above 80%  | Request pump OFF |
+| 30% to 80% | No action        |
+
+The program uses the host-supplied variable `LEVEL`.
+
+When the tank level is below 30%, BASIC-58 sends:
+
+```
+@HOST STATE "PUMP" 1
+```
+
+When the tank level is above 80%, BASIC-58 sends:
+
+```
+@HOST STATE "PUMP" 0
+```
+
+For levels between these limits, no notification is sent.
+
+## **2. Complete communication flow**
+
+The following sequence illustrates the interaction between the host and the interpreter.
+
+```
+        B4J HOST APPLICATION
+                 |
+                 |
+                 |  1. SetVariable("LEVEL", 20)
+                 |
+                 v
+          BASIC-58 INTERPRETER
+                 |
+                 |
+                 |  2. RUN
+                 |
+                 v
+          BASIC-58 PROGRAM
+                 |
+                 |
+                 |  3. Evaluate LEVEL
+                 |
+                 |  LEVEL < 30 ?
+                 |
+                 v
+          @HOST STATE "PUMP" 1
+                 |
+                 |
+                 |  4. HostStateChanged
+                 |
+                 v
+        B4J HOST APPLICATION
+                 |
+                 |
+                 |  5. Handle pump request
+                 |
+                 v
+          EXTERNAL SYSTEM
+          (OPC UA / MQTT /
+           Arduino / Hardware)
+```
+
+The host can also independently retrieve interpreter variables using `GetVariable`.
+
+### **Step 1 – Host supplies the tank level**
+
+The B4J application supplies the current measurement:
+
+```
+Interpreter.SetVariable("LEVEL", 20)
+```
+
+The value is stored for the next interpreter execution.
+
+### **Step 2 – Host loads and executes the program**
+
+```
+Interpreter.LoadProgram(Source)
+Interpreter.ExecuteCommand("RUN")
+```
+
+When `RUN` starts, the host-supplied variables are copied into the normal BASIC-58 variable map.
+
+### **Step 3 – BASIC-58 processes the measurement**
+
+For a supplied level of 20:
+
+```
+30 IF LEVEL < 30 THEN 100
+```
+
+The condition is true, so execution continues at line 100.
+
+### **Step 4 – BASIC-58 notifies the host**
+
+BASIC-58 executes:
+
+```
+110 @HOST STATE "PUMP" 1
+```
+
+The interpreter raises the `HostStateChanged` event.
+
+The B4J application receives:
+
+```
+Name  = "PUMP"
+Value = 1
+```
+
+The host can now handle the pump ON request.
+
+### **Step 5 – Host reads a BASIC-58 variable**
+
+The host can retrieve the current value of `LEVEL`:
+
+```
+Log(Interpreter.GetVariable("LEVEL"))
+```
+
+This is an independent read operation. It does not require an `@HOST STATE` notification.
+
+## **3. B4J host application**
+
+The following example demonstrates the complete interaction.
+
+### **TestHost**
+
+```
+Private Sub TestHost    'ignore
+    Log("[TestHost] Start")
+
+    ' =================================================
+    ' STEP 1: HOST -> BASIC-58
+    ' The host application supplies the tank level.
+    '
+    ' In a real application, this value could come from
+    ' a sensor, OPC UA, MQTT, or another data source.
+    ' =================================================
+    Interpreter.SetVariable("LEVEL", 20)
+
+    ' =================================================
+    ' STEP 2: DEFINE THE BASIC-58 CONTROL PROGRAM
+    ' =================================================
+    Dim Source As String = $"
+10 PRINT "TANK LEVEL CONTROL"
+20 PRINT "LEVEL: "; LEVEL; " %"
+30 IF LEVEL < 30 THEN 100
+40 IF LEVEL > 80 THEN 200
+50 END
+100 PRINT "LOW LEVEL - START PUMP"
+110 @HOST STATE "PUMP" 1
+120 END
+200 PRINT "HIGH LEVEL - STOP PUMP"
+210 @HOST STATE "PUMP" 0
+220 END
+"$
+
+    ' =================================================
+    ' STEP 3: HOST -> INTERPRETER
+    ' Load the BASIC-58 program and execute it.
+    ' =================================================
+    Interpreter.LoadProgram(Source)
+    Interpreter.ExecuteCommand("RUN")
+
+    ' =================================================
+    ' STEP 5: HOST READS A BASIC-58 VARIABLE
+    ' The host retrieves the current LEVEL value.
+    ' =================================================
+    Log($"[TestHost] Host reads LEVEL: ${Interpreter.GetVariable("LEVEL")}"$)
+
+    Stop
+End Sub
+```
+
+### **HostStateChanged event**
+
+The B4J application implements the callback that receives notifications from BASIC-58.
+
+```
+' =====================================================
+' STEP 4: BASIC-58 -> HOST
+'
+' BASIC-58 raises this event when it executes
+' an @HOST STATE command.
+'
+' Name  : State name, for example "PUMP"
+' Value : Requested state, for example 1 = ON, 0 = OFF
+'
+' The host application decides what to do with the event.
+' =====================================================
+Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
+    Log($"[HostStateChanged] ${Name} = ${Value}"$)
+
+    If Name = "PUMP" Then
+        If Value = 1 Then
+            Log("[HOST] Pump ON requested")
+        Else
+            Log("[HOST] Pump OFF requested")
+        End If
+    End If
+End Sub
+```
+
+## **4. Test results**
+
+The tank-level example was tested with three different input values.
+
+### **Test 1 – Low tank level**
+
+Host input:
+
+```
+Interpreter.SetVariable("LEVEL", 20)
+```
+
+Expected behaviour: Request pump ON.
+
+Result:
+
+```
+[TestHost] Start
+[TestHost] Host reads LEVEL: 20.0
+[Interpreter_Output] RUNNING...
+[Interpreter_Output] TANK LEVEL CONTROL
+[Interpreter_Output] LEVEL: 20 %
+[Interpreter_Output] LOW LEVEL - START PUMP
+[HostStateChanged] PUMP = 1.0
+[HOST] Pump ON requested
+[Interpreter_Output] READY.
+[Interpreter_Ready] READY
+```
+
+Passed
+
+### **Test 2 – High tank level**
+
+Host input:
+
+```
+Interpreter.SetVariable("LEVEL", 90)
+```
+
+Expected behaviour: Request pump OFF.
+
+Result:
+
+```
+[TestHost] Start
+[TestHost] Host reads LEVEL: 90.0
+[Interpreter_Output] RUNNING...
+[Interpreter_Output] TANK LEVEL CONTROL
+[Interpreter_Output] LEVEL: 90 %
+[Interpreter_Output] HIGH LEVEL - STOP PUMP
+[HostStateChanged] PUMP = 0.0
+[HOST] Pump OFF requested
+[Interpreter_Output] READY.
+[Interpreter_Ready] READY
+```
+
+Passed
+
+### **Test 3 – Normal tank level**
+
+Host input:
+
+```
+Interpreter.SetVariable("LEVEL", 50)
+```
+
+Expected behaviour: No pump command.
+
+Result:
+
+```
+[TestHost] Start
+[TestHost] Host reads LEVEL: 50.0
+[Interpreter_Output] RUNNING...
+[Interpreter_Output] TANK LEVEL CONTROL
+[Interpreter_Output] LEVEL: 50 %
+[Interpreter_Output] READY.
+[Interpreter_Ready] READY
+```
+
+Passed
+
+All three scenarios passed.
+
+## **5. Current implementation and limitations**
+
+The initial host bridge is intentionally limited to numeric variables and state notifications.
+
+| Feature                                     | Status          |
+| ------------------------------------------- | --------------- |
+| Host supplies numeric variables             | Implemented     |
+| BASIC-58 reads host-supplied variables      | Implemented     |
+| BASIC-58 modifies variables normally        | Implemented     |
+| Host retrieves numeric variables            | Implemented     |
+| Missing variables return zero               | Implemented     |
+| Host values restored at `RUN`               | Implemented     |
+| BASIC-58 sends host state notifications     | Implemented     |
+| Host receives `HostStateChanged` callback   | Implemented     |
+| String variables through the host bridge    | Not implemented |
+| Live host-variable updates during execution | Not implemented |
+| Host-to-interpreter event notifications     | Not implemented |
+
+### **Important behaviour**
+
+**Host variable lifetime**
+
+Host-supplied values are maintained separately from the normal interpreter variables.
+
+At the beginning of `RUN`, the normal variable map is cleared as usual. The host-supplied values are then copied into it.
+
+This means that host-supplied values are available again on subsequent runs, even though the normal variable map is cleared.
+
+**BASIC assignments**
+
+Once the values have been copied into the normal variable map, BASIC-58 treats them like ordinary numeric variables.
+
+For example:
+
+```
+10 LET LEVEL = LEVEL + 5
+```
+
+The host can retrieve the modified value using `GetVariable`.
+
+**State notifications**
+
+An `@HOST STATE` command sends a notification to the host application. It does not directly operate hardware or modify an external system.
+
+The host application is responsible for interpreting and handling the notification.
+
+**Synchronous callback**
+
+The host callback is raised while BASIC-58 executes the `@HOST STATE` command. The host receives the notification immediately through the configured callback mechanism.
+
+## **6. Possible applications**
+
+The bridge is not limited to tank-level control.
+
+It can be used wherever an application needs a small, configurable scripting engine.
+
+Examples include:
+
+| Application         | Host supplies        | BASIC-58 sends                          |
+| ------------------- | -------------------- | --------------------------------------- |
+| Tank monitoring     | Tank level           | Pump request                            |
+| Temperature control | Temperature          | Heater request                          |
+| Alarm handling      | Alarm status         | Alarm acknowledgement or action request |
+| Energy monitoring   | Power, energy values | Load control request                    |
+| Home automation     | Sensor values        | Device state request                    |
+| Process simulation  | Process measurements | Control commands                        |
+| Test systems        | Test measurements    | Test status or result                   |
+
+The host application remains responsible for communication with the actual devices and external systems.
+
+## **7. Design philosophy**
+
+The BASIC-58 Host Bridge is intended to remain a small and straightforward interface.
+
+It does not attempt to turn BASIC-58 into a complete automation framework.
+
+Instead, it provides a simple way to combine:
+
+- The BASIC-58 interpreter and its programming language.
+- The host application's data and services.
+- External hardware and communication interfaces.
+
+This separation allows BASIC-58 programs to contain the application-specific logic while the host application handles the technical details.
+
+**Small interpreter. Simple interface. Flexible applications.**
+
+*BASIC-58 – An embedded BASIC scripting engine.*
+
+A final documentation note: 
+I have deliberately described live variable updates during execution as **not implemented**, rather than implying that `SetVariable` updates the active BASIC variable immediately. That distinction is important for anyone integrating the bridge into a real host application.
+

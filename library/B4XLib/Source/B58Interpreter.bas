@@ -26,9 +26,10 @@ Private Sub Class_Globals
 	' Programs, vars, ' User-defined functions (UDFs)
 	Private ProgramLines As Map
 	Private Variables As Map
+	Private HostVariables As Map
 	Private Arrays As Map
 	Private Functions As Map
-
+	
 	' Program execution state
 	Private RunLines As List
 	Private RunPosition As Int
@@ -90,7 +91,8 @@ Public Sub Initialize(Callback As Object, EventName As String)
 
 	' Init all lists and maps
 	ProgramLines.Initialize
-    Variables.Initialize
+	Variables.Initialize
+	HostVariables.Initialize
 	Arrays.Initialize
     RunLines.Initialize
     InputVariables.Initialize
@@ -114,6 +116,10 @@ End Sub
 
 Private Sub RaiseReady
 	Utils.CallSubMethod(mCallback, mEventName, "_Ready")
+End Sub
+
+Private Sub RaiseHostStateChanged(Name As String, Value As Double)
+	Utils.CallSubMethod3(mCallback, mEventName, "_HostStateChanged", Name, Value)
 End Sub
 #End Region
 
@@ -193,6 +199,10 @@ Public Sub RunProgram
 
 	Variables.Clear
 	Arrays.Clear
+
+	For Each HostKey As String In HostVariables.Keys
+		Variables.Put(HostKey, HostVariables.Get(HostKey))
+	Next
 
 	WaitingForInput = False
 	WaitingForDelay = False
@@ -276,6 +286,9 @@ Public Sub ExecuteCommand(Command As String)
     Select Case UpperCommand
         Case "HELP"
 			ExecuteHelp
+
+		Case "HINTS"
+			ExecuteHints
 
 		Case "RUN"
 			RunProgram
@@ -1047,8 +1060,18 @@ Private Sub ContinueProgram
 
 			' BASIC-58 system commands
 			Case UpperLine.StartsWith("@SYS")
-
 				RaiseSystemCommand(LineCode)
+				Continue
+
+				' BASIC-58 host commands
+				' BASIC-58 host commands
+			Case UpperLine.StartsWith("@HOST")
+
+				If RaiseHostCommand(LineCode) = False Then
+					If HandleProgramError("?SYNTAX ERROR IN LINE " & LineNumber) Then Continue
+					Exit
+				End If
+
 				Continue
 
 			' BASIC-58 execution delay
@@ -1776,8 +1799,48 @@ Private Sub ParseFactor As Double
 
 			'Mathematical function.
 			Dim Argument As Double = ParseExpression
+			Dim Precision As Double = 0
+			Dim Digits As Int = 0
+			Dim HasSecondArgument As Boolean = False
 
 			SkipSpaces
+
+			'Optional second argument.
+			If ExprPos < ExprText.Length Then
+				If ExprText.SubString2(ExprPos, ExprPos + 1) = "," Then
+
+					If Name <> "ROUND" And Name <> "MAX" And Name <> "MIN" _
+		                And Name <> "MOD" And Name <> "DIV" Then
+						ExprError = True
+						Return 0
+					End If
+
+					ExprPos = ExprPos + 1
+
+					Precision = ParseExpression
+
+					If ExprError Then Return 0
+
+					If Name = "ROUND" Or Name = "MOD" Or Name = "DIV" Then
+						If Precision <> Floor(Precision) Then
+							ExprError = True
+							Return 0
+						End If
+					End If
+
+					Digits = Precision
+					HasSecondArgument = True
+
+					SkipSpaces
+				End If
+			End If
+
+			'Required second argument.
+			If (Name = "MAX" Or Name = "MIN" Or Name = "MOD" Or Name = "DIV") _
+        		And HasSecondArgument = False Then
+				ExprError = True
+				Return 0
+			End If
 
 			If ExprError Or ExprPos >= ExprText.Length Then
 				ExprError = True
@@ -1790,7 +1853,7 @@ Private Sub ParseFactor As Double
 			End If
 
 			ExprPos = ExprPos + 1
-
+			
 			Select Case Name
 				Case "SQR"
 					If Argument < 0 Then
@@ -1804,6 +1867,39 @@ Private Sub ParseFactor As Double
 
 				Case "INT"
 					Return Floor(Argument)
+
+				Case "ROUND"
+					If HasSecondArgument Then
+						Return Round2(Argument, Digits)
+					Else
+						Return Round(Argument)
+					End If
+
+				Case "MAX"
+					Return Max(Argument, Precision)
+
+				Case "MIN"
+					Return Min(Argument, Precision)
+
+				Case "MOD"
+					If Precision = 0 Then
+						ExprError = True
+						Return 0
+					End If
+					Return Argument Mod Precision
+
+				Case "DIV"
+					If Precision = 0 Then
+						ExprError = True
+						Return 0
+					End If
+
+					Dim Result As Double = Floor(Abs(Argument / Precision))
+
+					If Argument < 0 And Precision > 0 Then Result = -Result
+					If Argument > 0 And Precision < 0 Then Result = -Result
+
+					Return Result
 
 				Case "SIN"
 					Return Sin(Argument * cPI / 180)
@@ -3273,6 +3369,41 @@ End Sub
 Private Sub RaiseSystemCommand(Command As String)
 	Utils.CallSubMethod2(mCallback, mEventName, "_SystemCommand", Command)
 End Sub
+
+' Raise a BASIC-58 host command.
+Private Sub RaiseHostCommand(Command As String) As Boolean
+
+    Dim Text As String = Command.Trim
+
+    ' Check command syntax.
+    If Text.ToUpperCase.StartsWith("@HOST STATE ") = False Then Return False
+
+    ' Extract command arguments.
+    Dim Arguments As String = Text.SubString(11).Trim
+
+    ' State name must be enclosed in quotes.
+    If Arguments.Length < 3 Then Return False
+    If Arguments.SubString2(0, 1) <> Chr(34) Then Return False
+
+    Dim QuotePos As Int = Arguments.SubString(1).IndexOf(Chr(34)) + 1
+    If QuotePos <= 1 Then Return False
+
+    Dim Name As String = Arguments.SubString2(1, QuotePos).Trim
+    Dim ValueText As String = Arguments.SubString(QuotePos + 1).Trim
+
+    If Name = "" Or ValueText = "" Then Return False
+
+    ' Evaluate the numeric value.
+    Dim Value As Double = EvaluateNumericExpression(ValueText)
+
+    If ExprError Then Return False
+
+    ' Notify the host application.
+    RaiseHostStateChanged(Name.ToUpperCase, Value)
+
+    Return True
+
+End Sub
 #End Region
 
 ' ----------------------------------------------------------------
@@ -3281,6 +3412,10 @@ End Sub
 #Region Help
 Public Sub ExecuteHelp
 	RaiseOutput(B58Help.HelpText)
+End Sub
+
+Public Sub ExecuteHints
+	RaiseOutput(B58Help.HintsText.Trim)
 End Sub
 #End Region
 
@@ -4011,4 +4146,22 @@ Private Sub PrepareSerialCommand(Command As String) As Boolean
 
 	Return True
 
+End Sub
+
+' ----------------------------------------------------------------
+' HOST BRIDGE
+' ----------------------------------------------------------------
+
+' SetVariable
+' Host to set a variable.
+Public Sub SetVariable(Name As String, Value As Double)
+	HostVariables.Put(Name.ToUpperCase, Value)
+End Sub
+
+' GetVariable
+' Host to get (request a variable).
+Public Sub GetVariable(Name As String) As Double
+	Name = Name.ToUpperCase
+	If Variables.ContainsKey(Name) = False Then Return 0
+	Return Variables.Get(Name)
 End Sub

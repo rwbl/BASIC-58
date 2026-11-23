@@ -8,7 +8,7 @@ Version=9.85
 ' Class Module:	B4XMainPage
 ' Project:		BASIC-58
 ' Brief:		B4XPages development program for BASIC-58.
-' Date:			See Class_Globals VERSION
+' Date:			See module B58System > Class_Globals VERSION
 ' Author:		Robert W.B. Linn (c) 2026 MIT License
 ' Description:	This page is used to develop & test BASIC-58.
 ' DependsOn:	CSSUtils.
@@ -30,10 +30,6 @@ Version=9.85
 ' #Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
 
 Private Sub Class_Globals
-	' A tiny BASIC interpreter
-	Private APPNAME As String = "BASIC-58"
-	Private APPVERSION As String = "v1.0.0 (Build 20261119)"
-	Private APPCOPYRIGHT As String = "Copyright (c) 2026 Robert W.B. Linn - MIT Licence"
 
 	' Core
 	Private fx As JFX
@@ -41,15 +37,19 @@ Private Sub Class_Globals
 
 	' UI
 	Private Root As B4XView
+	Private spMain As SplitPane
+	Private pnTerminal As B4XView
+	Private lblTerminal As B4XView
+	Private taTerminal As B4XView
+	
+	Private pnEditor As B4XView
+	Private lblEditor As B4XView
+	Private taEditor As B4XView	' TextArea
+
 	Private pnToolbar As B4XView
 	Private lblToolbar As B4XView
 	Private cbCommands As ComboBox
-	Private taEditor As B4XView
-	Private taOutput As B4XView
-	Private lblOutput As B4XView
-	Private lblEditor As B4XView
-	Private pnEditor As B4XView
-	Private pnOutput As B4XView
+
 	Private lblStatus As B4XView
 
 	' Toolbar
@@ -90,7 +90,10 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	Root = Root1
 	DesignerUtils.Initialize
 	Root.LoadLayout("MainPage")
-
+	' Splitpane
+	spMain.LoadLayout("PanelEditor")     'Left pane
+	spMain.LoadLayout("PanelTerminal")    'Right pane
+	
 	' BASIC-58 
 	' Interpreter with event prefix Interpreter
 	Interpreter.Initialize(Me, "Interpreter")
@@ -105,24 +108,23 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	DelayTimer.Initialize("DelayTimer", DELAY_INTERVAL)
 	DelayTimer.Enabled = False
 	
-	' Create BASIC58 data directory.
-	CurrentFilePath = File.DirApp
+	' Create BASIC58 data directory
+	' Initialize BASIC program directory from system settings.
+	CurrentFilePath = System.GetFileDir ' instead File.DirApp
 	CurrentFileName = "PROGRAM.BAS"
 	ProgramModified = False
 	
 	' B4Xpages
 	B4XPages.GetNativeParent(Me).Icon = xui.LoadBitmap(File.DirAssets, "Icon.png")
 	' B4XPages.GetNativeParent(Me).Resizable = False
-
-	InitializeKeyboardShortcuts
-
-	InitializeUIStyle
+	AssignKeyboardShortcuts
+	ApplyUIStyle
 
 	' Textareas editable state
 	taEditor.As(TextArea).Editable = True
-	taOutput.As(TextArea).Editable = False
+	taTerminal.As(TextArea).Editable = False
 
-	ComboBoxSetPromptText(cbCommands, "Enter BASIC command...")
+	ComboBoxSetPromptText(cbCommands, "ENTER COMMAND OR INPUT...")
 
 	' Labels
 	lblStatus.Text = "READY"
@@ -143,10 +145,11 @@ End Sub
 ' UI Styling
 ' ----------------------------------------------------------------
 
-' InitializeUIStyle
-' VT220 Amber
-Private Sub InitializeUIStyle
+' ApplyUIStyle
+' Apply UI style like DEC VT220 Amber
+Private Sub ApplyUIStyle
 	
+	' Load special styling from extarnal styling sheet
 	B4XPages.GetNativeParent(Me).Stylesheets.Add(File.GetUri(File.DirAssets, "Main.css"))
 	
 	'--------------------------------------------------
@@ -176,48 +179,46 @@ Private Sub InitializeUIStyle
 	'--------------------------------------------------
 	' Label Output
 	'--------------------------------------------------
-	lblOutput.Font = fx.CreateFont("Consolas", 14, True, False)
-	CSSUtils.SetStyleProperty(lblOutput, "-fx-text-fill", "#4A4845")
+	lblTerminal.Font = fx.CreateFont("Consolas", 14, True, False)
+	CSSUtils.SetStyleProperty(lblTerminal, "-fx-text-fill", "#4A4845")
 	
 	'--------------------------------------------------
 	' Output Area
 	'--------------------------------------------------
-	pnOutput.SetColorAndBorder(xui.Color_ARGB(0xFF,0xDC,0xD6,0xC8), 2, xui.Color_LightGray, 5)
-	CSSUtils.SetStyleProperty(taOutput, "-fx-control-inner-background", "#191713")
-	CSSUtils.SetStyleProperty(taOutput, "-fx-text-fill", "#FFBF69")
-	CSSUtils.SetStyleProperty(taOutput, "-fx-highlight-fill", "#80613A")
-	CSSUtils.SetStyleProperty(taOutput, "-fx-highlight-text-fill", "#FFFFFF")
-	CSSUtils.SetStyleProperty(taOutput, "-fx-border-color", "#80613A")
-	CSSUtils.SetStyleProperty(taOutput, "-fx-border-width", "2")
-	taOutput.Font = fx.CreateFont("Consolas", 16, False, False)
+	pnTerminal.SetColorAndBorder(xui.Color_ARGB(0xFF,0xDC,0xD6,0xC8), 2, xui.Color_LightGray, 5)
+	CSSUtils.SetStyleProperty(taTerminal, "-fx-control-inner-background", "#191713")
+	CSSUtils.SetStyleProperty(taTerminal, "-fx-text-fill", "#FFBF69")
+	CSSUtils.SetStyleProperty(taTerminal, "-fx-highlight-fill", "#80613A")
+	CSSUtils.SetStyleProperty(taTerminal, "-fx-highlight-text-fill", "#FFFFFF")
+	CSSUtils.SetStyleProperty(taTerminal, "-fx-border-color", "#80613A")
+	CSSUtils.SetStyleProperty(taTerminal, "-fx-border-width", "2")
+	taTerminal.Font = fx.CreateFont("Consolas", 16, False, False)
 
 	'--------------------------------------------------
 	' Command input
 	'--------------------------------------------------
-	Dim JO As JavaObject = cbCommands
-	Dim Editor As JavaObject = JO.RunMethod("getEditor", Null)
-	Editor.RunMethod("setStyle", Array("-fx-font-family: 'Consolas'; -fx-font-size: 16px;"))	
+	' This combobox styling is setusing external file Main.css.
 	
-	CSSUtils.SetStyleProperty(cbCommands, "-fx-background-color", "#211B13")
-	CSSUtils.SetStyleProperty(cbCommands, "-fx-text-fill", "#FFBF69")
-	CSSUtils.SetStyleProperty(cbCommands, "-fx-prompt-text-fill", "#C9954A")
-	CSSUtils.SetStyleProperty(cbCommands, "-fx-border-color", "#80613A")
-	CSSUtils.SetStyleProperty(cbCommands, "-fx-border-width", "1")
-
 	'--------------------------------------------------
-	' Toolbar Label (aka Buttons) See Class DesignerToolbar
+	' Toolbar Label (aka text for the Buttons, like F5 RUN) 
+	' See Class DesignerToolbar
 	'--------------------------------------------------
 	CSSUtils.SetBackgroundColor(pnToolbar, fx.Colors.From32Bit(0xFFDCD6C8))
 	lblToolbar.Font = fx.CreateFont("Consolas", 16, True, False)
 	CSSUtils.SetStyleProperty(lblToolbar, "-fx-text-fill", "#4A4845")
 
 	'--------------------------------------------------
-	' Status
+	' Status Label (botton of the form)
 	'--------------------------------------------------
 	lblStatus.Font = fx.CreateFont("Consolas", 12, True, False)
 	CSSUtils.SetStyleProperty(lblStatus, "-fx-text-fill", "#4A4845")
 	CSSUtils.SetStyleProperty(lblStatus, "-fx-background-color", "#D2CDC6")
 
+	' Apply - esp show the combobox cursor requested via sleep workaround
+	Sleep(50)
+	taTerminal.RequestFocus
+	Sleep(20)
+	cbCommands.RequestFocus
 End Sub
 
 ' ----------------------------------------------------------------
@@ -225,7 +226,7 @@ End Sub
 ' ----------------------------------------------------------------
 
 #Region ShortCuts
-Private Sub InitializeKeyboardShortcuts
+Private Sub AssignKeyboardShortcuts
 	Dim R As Reflector
 	R.Target = B4XPages.GetNativeParent(Me).RootPane
 	R.AddEventFilter("MainKeyPressed", "javafx.scene.input.KeyEvent.KEY_PRESSED")
@@ -266,6 +267,7 @@ Private Sub MainKeyPressed_Filter(E As Event)
             Case "F5"
                 R.RunMethod("consume")
 				LoadEditorProgram
+				PrepareRun
 				Interpreter.RunProgram
 
             Case "F6"
@@ -286,8 +288,20 @@ Private Sub MainKeyPressed_Filter(E As Event)
 
             Case "F10"
                 R.RunMethod("consume")
-                taOutput.Text = ""
-        End Select
+				taTerminal.Text = ""
+
+			Case "F11"
+				R.RunMethod("consume")
+
+				Dim NativeForm As Form = B4XPages.GetNativeParent(B4XPages.MainPage)
+				Dim Stage As JavaObject = NativeForm.As(JavaObject).GetField("stage")
+				Dim FullScreen As Boolean = Stage.RunMethod("isFullScreen", Null)
+				Stage.RunMethod("setFullScreen", Array(Not(FullScreen)))
+				
+			Case "F12"
+				R.RunMethod("consume")
+				ProcessCommand("@SYS SHOW VERSION")
+		End Select
     End If
 End Sub
 #End Region
@@ -299,7 +313,7 @@ End Sub
 ' Interpreter_Output
 ' Write string with newline option to the output textarea.
 Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
-	Dim NativeTextArea As JavaObject = taOutput
+	Dim NativeTextArea As JavaObject = taTerminal
 	Dim s As String = Value
 
 	If NewLine Then s = s & CRLF
@@ -307,7 +321,7 @@ Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
 	NativeTextArea.RunMethod("appendText", Array(s))
 	NativeTextArea.RunMethod("positionCaret", Array(NativeTextArea.RunMethod("getLength", Null)))
 
-	Wait For (ScrollTextToBottom(taOutput)) Complete (Success As Boolean)
+	Wait For (ScrollTextToBottom(taTerminal)) Complete (Success As Boolean)
 End Sub
 
 ' Interpreter_Ready
@@ -341,7 +355,7 @@ End Sub
 ' ----------------------------------------------------------------
 #Region System
 Private Sub System_Output(Message As String)
-	PrintText(taOutput, Message)
+	PrintText(taTerminal, Message)
 End Sub
 #End Region
 
@@ -359,6 +373,7 @@ Private Sub Toolbar_Click (lbl As B4XView)
 	Select tag.ToUppercase
 			Case "RUN"
 				LoadEditorProgram
+				PrepareRun
 				Interpreter.RunProgram
 			Case "LIST"
 				ProcessCommand("LIST")
@@ -369,7 +384,7 @@ Private Sub Toolbar_Click (lbl As B4XView)
 			Case "NEW"
 				NewProgram
 			Case "CLS"
-				taOutput.Text = ""
+				taTerminal.Text = ""
 	End Select
 	'B4XPages.SetTitle(Me, tag)
 End Sub
@@ -398,17 +413,17 @@ Private Sub taEditor_TextChanged (Old As String, New As String)
 	End If
 End Sub
 
-Private Sub taEditor_MouseClicked (EventData As MouseEvent)
-	If EventData.ClickCount = 2 Then
-		taEditor.Text = ""
-	End If	
-End Sub
-
-Private Sub taOutput_MouseClicked (EventData As MouseEvent)
-	If EventData.ClickCount = 2 Then
-		taOutput.Text = ""
-	End If
-End Sub
+'Private Sub taEditor_MouseClicked (EventData As MouseEvent)
+'	If EventData.ClickCount = 2 Then
+'		taEditor.Text = ""
+'	End If	
+'End Sub
+'
+'Private Sub taTerminal_MouseClicked (EventData As MouseEvent)
+'	If EventData.ClickCount = 2 Then
+'		taTerminal.Text = ""
+'	End If
+'End Sub
 
 Private Sub cbCommands_ValueChanged (Value As Object)
 	If Value.As(String).Length = 0 Then Return
@@ -450,6 +465,9 @@ Private Sub ProcessCommand(Command As String)
 	Select Case True
 		Case UpperCommand = "HELP"
 			ShowHelp
+
+		Case UpperCommand = "HINTS"
+			ShowHints
 			
 		Case UpperCommand = "SAVE" Or UpperCommand.StartsWith("SAVE ")
 			SaveProgram(Command.SubString(4).Trim, CurrentFilePath)
@@ -460,13 +478,14 @@ Private Sub ProcessCommand(Command As String)
 			LoadProgram(Command.SubString(4).Trim)
 
 		Case UpperCommand = "CLS"
-			taOutput.Text = ""
+			taTerminal.Text = ""
 
 		Case UpperCommand = "NEW"
 			NewProgram
 
 		Case UpperCommand = "RUN"
 			LoadEditorProgram
+			PrepareRun
 			Interpreter.RunProgram
 
 		Case UpperCommand = "BYE"
@@ -475,7 +494,6 @@ Private Sub ProcessCommand(Command As String)
 			
 		Case UpperCommand = "BASIC-58"
 			ShowEasterEgg
-
 		Case UpperCommand.StartsWith("@SYS")
 			System.ExecuteCommand(Command.Substring(4).Trim)
 
@@ -483,7 +501,7 @@ Private Sub ProcessCommand(Command As String)
 			Serial.ExecuteCommand(Command)
 
 		Case UpperCommand.StartsWith("@")
-			PrintText(taOutput, "[BASIC-58][E] Unknown command.")
+			PrintText(taTerminal, "[BASIC-58][E] Unknown command.")
 			
 		Case Else
 			If UpperCommand = "LIST" Or UpperCommand.StartsWith("LIST ") Or _
@@ -515,6 +533,10 @@ End Sub
 Private Sub LoadEditorProgram
 	Interpreter.LoadProgram(taEditor.Text)
 End Sub
+
+Private Sub PrepareRun
+    If System.GetRunClear Then taTerminal.Text = ""
+End Sub
 #End Region
 
 ' ----------------------------------------------------------------
@@ -534,7 +556,7 @@ Private Sub NewProgram
 
 	' Clear interpreter and output.
 	Interpreter.ClearProgram
-	taOutput.Text = ""
+	taTerminal.Text = ""
 
 	' Reset program information.
 	CurrentFileName = "PROGRAM.BAS"
@@ -550,7 +572,7 @@ Private Sub SaveProgram(FileName As String, FilePath As String) As Boolean
 	'Log("PROGRAM LINES: " & ProgramLines.Size)
 
 	If Interpreter.GetProgramLineCount = 0 Then
-		PrintText(taOutput, "NO PROGRAM")
+		PrintText(taTerminal, "NO PROGRAM")
 		Return False
 	End If
 
@@ -559,7 +581,7 @@ Private Sub SaveProgram(FileName As String, FilePath As String) As Boolean
 	End If
 
 	If FileName.Contains("/") Or FileName.Contains("\") Then
-		PrintText(taOutput, "?INVALID FILE NAME")
+		PrintText(taTerminal, "?INVALID FILE NAME")
 		Return False
 	End If
 
@@ -595,12 +617,12 @@ Private Sub SaveProgram(FileName As String, FilePath As String) As Boolean
 		ProgramModified = False
 		UpdatePageTitle
 
-		PrintText(taOutput, "SAVED: " & FileName)
+		PrintText(taTerminal, "SAVED: " & FileName)
 		
 		Return True
 		
 	Catch
-		PrintText(taOutput, "?SAVE ERROR")
+		PrintText(taTerminal, "?SAVE ERROR")
 		'Log($"[SaveProgram][E] ${LastException}"$)
 		Return False
 	End Try
@@ -613,7 +635,7 @@ Private Sub LoadProgram(FileName As String)
 	End If
 
 	If FileName.Contains("/") Or FileName.Contains("\") Then
-		PrintText(taOutput, $"?INVALID FILE NAME - ${FileName}"$)
+		PrintText(taTerminal, $"?INVALID FILE NAME - ${FileName}"$)
 		Return
 	End If
 
@@ -630,7 +652,7 @@ Private Sub LoadProgram(FileName As String)
 	FileName = FileName.ToUpperCase
 
 	If File.Exists(CurrentFilePath, FileName) = False Then
-		PrintText(taOutput, "?FILE NOT FOUND: " & FileName)
+		PrintText(taTerminal, "?FILE NOT FOUND: " & FileName)
 		Return
 	End If
 
@@ -666,11 +688,11 @@ Private Sub LoadProgram(FileName As String)
 		ProgramModified = False
 		UpdatePageTitle
 
-		PrintText(taOutput, "LOADED: " & CurrentFileName)
-		PrintText(taOutput, "LINES: " & Interpreter.GetProgramLineCount)
+		PrintText(taTerminal, "LOADED: " & CurrentFileName)
+		PrintText(taTerminal, "LINES: " & Interpreter.GetProgramLineCount)
 	Catch
 		LoadingProgram = False
-		PrintText(taOutput, "?LOAD ERROR")
+		PrintText(taTerminal, "?LOAD ERROR")
 		Log($"[LoadProgram][E] ${LastException}"$)
 	End Try
 End Sub
@@ -746,13 +768,13 @@ Private Sub PrintText(Target As B4XView, Value As String)
 	NativeTextArea.RunMethod("appendText", Array(Value & CRLF))
 	NativeTextArea.RunMethod("positionCaret", Array(NativeTextArea.RunMethod("getLength", Null)))
 
-	If Target.Tag = taOutput.Tag Then
-		Wait For (ScrollTextToBottom(taOutput)) Complete (Success As Boolean)
+	If Target.Tag = taTerminal.Tag Then
+		Wait For (ScrollTextToBottom(taTerminal)) Complete (Success As Boolean)
 	End If
 End Sub
 
 Private Sub UpdatePageTitle
-	Dim PageTitle As String = $"${APPNAME} - ${CurrentFileName}"$
+	Dim PageTitle As String = $"${System.APPNAME} - ${CurrentFileName}"$
 
 	If ProgramModified Then
 		PageTitle = PageTitle & " *"
@@ -767,40 +789,40 @@ End Sub
 ' ----------------------------------------------------------------
 #Region B58Serial
 Private Sub Serial_Connected
-	PrintText(taOutput, "[BASIC-58] Controller connected.")
+	PrintText(taTerminal, "[BASIC-58] Controller connected.")
 	Sleep(2000) ' Allow Arduino UNO reset
 	Interpreter.ResumeHardwareCommand
 End Sub
 
 Private Sub Serial_CommandCompleted(Frame() As Byte)
-	PrintText(taOutput, $"[BASIC-58] ACK received: ${bc.HexFromBytes(Frame)}"$)
+	PrintText(taTerminal, $"[BASIC-58] ACK received: ${bc.HexFromBytes(Frame)}"$)
 	Interpreter.ResumeHardwareCommand
 End Sub
 
 Private Sub Serial_CommandError(Message As String)
-	PrintText(taOutput, "[BASIC-58][E] " & Message)
+	PrintText(taTerminal, "[BASIC-58][E] " & Message)
 	Interpreter.ResumeHardwareCommand
 End Sub
 
 Private Sub Serial_Disconnected
-	PrintText(taOutput, "[BASIC-58] Controller disconnected.")
+	PrintText(taTerminal, "[BASIC-58] Controller disconnected.")
     Interpreter.ResumeHardwareCommand
     Interpreter.ExternalDataDisconnected
 End Sub
 
 Private Sub Serial_Error(Message As String)
-	PrintText(taOutput, "[BASIC-58][E] " & Message)
+	PrintText(taTerminal, "[BASIC-58][E] " & Message)
 End Sub
 
 Private Sub Serial_PortsFound(Ports As List)
-	PrintText(taOutput, "AVAILABLE SERIAL PORTS:")
+	PrintText(taTerminal, "AVAILABLE SERIAL PORTS:")
 	For Each Port As String In Ports
-		PrintText(taOutput, Port)
+		PrintText(taTerminal, Port)
 	Next
 End Sub
 
 Private Sub Serial_NoPortsFound
-	PrintText(taOutput, "NO SERIAL PORTS FOUND.")
+	PrintText(taTerminal, "NO SERIAL PORTS FOUND.")
 End Sub
 
 Private Sub Serial_DataReceived(Frame() As Byte)
@@ -830,59 +852,53 @@ End Sub
 ' ----------------------------------------------------------------
 #Region Messages
 Private Sub ShowWelcomMessage
-	taOutput.Text = ""
-	PrintText(taOutput, "BASIC-58  BASIC INTERPRETER")
-	PrintText(taOutput, "VERSION " & APPVERSION)
-	PrintText(taOutput, APPCOPYRIGHT)
-	PrintText(taOutput, "---------------------------")
-	PrintText(taOutput, "TYPE HELP FOR COMMANDS")
-	PrintText(taOutput, "READY.")
-	Wait For (ScrollTextToTop(taOutput)) Complete (Success As Boolean)
+	taTerminal.Text = ""
+	PrintText(taTerminal, "BASIC-58 - RETRO BASIC INTERPRETER")
+	PrintText(taTerminal, "VERSION " & System.APPVERSION)
+	PrintText(taTerminal, System.APPCOPYRIGHT)
+	PrintText(taTerminal, "---------------------------")
+	PrintText(taTerminal, "TYPE HELP FOR COMMANDS")
+	PrintText(taTerminal, "READY.")
+	Wait For (ScrollTextToTop(taTerminal)) Complete (Success As Boolean)
 	lblStatus.Text = "READY"
 End Sub
 
 Private Sub ShowHelp
-	taOutput.Text = ""
+	taTerminal.Text = ""
 	Interpreter.ExecuteHelp
-	ScrollTextToTop(taOutput)
+	Sleep(50)
+	ScrollTextToTop(taTerminal)
 	lblStatus.Text = "HELP"
 End Sub
 
+Private Sub ShowHints
+	taTerminal.Text = ""
+	Interpreter.ExecuteHints
+	Sleep(50)
+	ScrollTextToTop(taTerminal)
+	lblStatus.Text = "HINTS"
+End Sub
+
 Private Sub ShowEasterEgg
-	taOutput.Text = ""
-	PrintText(taOutput, "================================")
-	PrintText(taOutput, "       B A S I C - 5 8")
-	PrintText(taOutput, "================================")
-	PrintText(taOutput, "")
-	PrintText(taOutput, "HELLO, RETRO PROGRAMMER!")
-	PrintText(taOutput, "")
-	PrintText(taOutput, "SOME THINGS NEVER GET OLD.")
-	PrintText(taOutput, "ESPECIALLY A GOOD BASIC PROGRAM.")
-	PrintText(taOutput, "")
-	PrintText(taOutput, "KEEP CODING AND HAVE FUN!")
-	PrintText(taOutput, "")
-	PrintText(taOutput, "              :-)")
-	PrintText(taOutput, "================================")
-	Wait For (ScrollTextToTop(taOutput)) Complete (Success As Boolean)
+	taTerminal.Text = B58Help.EasterEggText
+	Wait For (ScrollTextToTop(taTerminal)) Complete (Success As Boolean)
 	lblStatus.Text = "ENJOY BASIC-58"
 End Sub
 #End Region
 
+' ----------------------------------------------------------------
+' UI HELPERS
+' ----------------------------------------------------------------
+#Region UIHelpers
 Public Sub ScrollTextToBottom(Target As B4XView) As ResumableSub
-	Sleep(50)
-
 	Dim NativeTextArea As JavaObject = Target
 	NativeTextArea.RunMethod("setScrollTop", Array(100000.0))
-
 	Return True
 End Sub
 
 Public Sub ScrollTextToTop(Target As B4XView) As ResumableSub
-	Sleep(50)
-
 	Dim NativeTextArea As JavaObject = Target
 	NativeTextArea.RunMethod("setScrollTop", Array(0.0))
-
 	Return True
 End Sub
 
@@ -890,4 +906,4 @@ Public Sub ComboBoxSetPromptText(box As ComboBox, text As String)
 	Dim joCB As JavaObject = box
 	joCB.RunMethod("setPromptText", Array(text))
 End Sub
-
+#End Region

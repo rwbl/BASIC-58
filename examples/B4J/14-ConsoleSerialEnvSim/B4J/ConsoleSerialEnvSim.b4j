@@ -1,0 +1,190 @@
+﻿AppType=StandardJava
+Build1=Default,b4j.example
+Group=Default Group
+Library1=byteconverter
+Library2=javaobject
+Library3=jcore
+Library4=jrandomaccessfile
+Library5=jserial
+Library6=json
+Library7=basic58
+NumberOfFiles=0
+NumberOfLibraries=7
+NumberOfModules=0
+Version=10.7
+@EndOfDesignText@
+' ================================================================
+' Main Module:	ConsoleSerialEnvSim
+' Project:		BASIC-58
+' Brief:		
+' Date:			20261122
+' Author:		Robert W.B. Linn (c) 2026 MIT License
+' Description:	
+' Log:
+'[TestHostSerial] Start
+'[Main.Interpreter_Output] 
+'[Main.Interpreter_Output] RUNNING...
+'[Main.Interpreter_Output] 
+'[Main.Interpreter_HardwareCommand] @SER CONNECT COM3
+'[Main.Serial_Connected]
+'[Main.Interpreter_Output] WAITING For Temperature...
+'[Main.Serial_DataReceived] 1920011D58
+'[Main.Interpreter_Output] Temperature: 29
+'[Main.Interpreter_HardwareCommand] @SER DISCONNECT
+'[Main.Serial_Disconnected]
+'[Main.Interpreter_Output] 
+'[Main.Interpreter_Output] READY.
+'[Main.Interpreter_Ready] READY
+'[Main.Interpreter_Ready] HOST Temperature received: 29.0
+' ================================================================
+
+#Region Project Attributes 
+	#CommandLineArgs:
+	#MergeLibraries: True 
+#End Region
+
+Sub Process_Globals
+	' BASIC-58 Instances (mandatory)
+	' Interpreter
+	Private Interpreter As B58Interpreter
+	' Serial Communication
+	Private Serial As B58Serial
+	' System
+	Private System As B58System
+
+	' Host Variable TEMP
+	Private Temperature As Double
+
+	' Helper
+	Private bc As ByteConverter
+End Sub
+
+Sub AppStart (Args() As String)
+	' 	' BASIC-58
+	' Interpreter with event prefix Interpreter
+	Interpreter.Initialize(Me, "Interpreter")
+
+	' Serial communication with event prefix Serial
+	Serial.Initialize(Me, "Serial")
+
+	' System commands
+	System.Initialize(Me, "System")
+
+	' Tests
+	CallSubDelayed(Me, "TestHostSerial")
+
+	' Mandatory
+	StartMessageLoop
+End Sub
+
+Private Sub Stop
+	StopMessageLoop
+End Sub
+
+' ----------------------------------------------------------------
+' TESTS
+' ----------------------------------------------------------------
+#Region TestHostSerial
+Private Sub TestHostSerial    'ignore
+	Log("[TestHostSerial] Start")
+
+	' STEP 1: DEFINE THE BASIC-58 PROGRAM
+	Dim Source As String = $"
+10 @SER CONNECT COM3
+20 PRINT "WAITING FOR TEMPERATURE..."
+30 ASSIGN TEMP
+40 PRINT "TEMPERATURE: "; TEMP
+50 @SER DISCONNECT
+60 END
+"$
+	' STEP 2: LOAD AND RUN THE PROGRAM
+	' BASIC-58 connects to the serial device and waits for the temperature measurement.
+	Interpreter.LoadProgram(Source)
+	Interpreter.ExecuteCommand("RUN")
+	
+	' Checkout the events _Ready
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' INTERPRETERCALLBACKS
+' ----------------------------------------------------------------
+#Region InterpreterCallbacks
+' Interpreter_Output
+' Write string with newline option to the output textarea.
+Private Sub Interpreter_Output(Value As String, NewLine As Boolean)
+	Log($"[Main.Interpreter_Output] ${Value}"$)
+End Sub
+
+' Interpreter_Ready
+' Update label status with ready message.
+Private Sub Interpreter_Ready
+	Log($"[Main.Interpreter_Ready] READY"$)
+
+	' Assign the variable temperature to the global
+    Temperature = Interpreter.GetVariable("TEMP")
+	Log($"[Main.Interpreter_Ready] HOST Temperature received: ${Temperature}"$)
+	
+	' Lets stop here
+	Stop
+End Sub
+
+' Interpreter_WaitingForDelay
+' handling DELAY command
+Private Sub Interpreter_WaitingForDelay
+	Log($"[Main.Interpreter_WaitingForDelay] delay=${Interpreter.GetDelayMilliseconds}"$)
+End Sub
+
+Private Sub Interpreter_HardwareCommand(Command As String)
+	Log($"[Main.Interpreter_HardwareCommand] ${Command}"$)
+	Serial.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_SystemCommand(Command As String)
+	Log($"[Main.Interpreter_SystemCommand] ${Command}"$)
+	System.ExecuteCommand(Command)
+End Sub
+
+Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
+	Log($"[Main.Interpreter_ProgramRenumbered]"$)
+	Log(ProgramText)
+End Sub
+
+Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
+	Log($"[Main.HostStateChanged] ${Name} = ${Value}"$)
+End Sub
+#End Region
+
+' ----------------------------------------------------------------
+' SYSTEM CALLBACKS
+' ----------------------------------------------------------------
+#Region System
+Private Sub System_Output(Message As String)
+	Log($"[Main.System_Output] ${Message}"$)
+End Sub
+#End Region
+
+#Region Serial
+Private Sub Serial_Connected
+	Log("[Main.Serial_Connected]")
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_Disconnected
+	Log("[Main.Serial_Disconnected]")
+	Interpreter.ResumeHardwareCommand
+End Sub
+
+Private Sub Serial_DataReceived(buffer() As Byte)
+	Log($"[Main.Serial_DataReceived] ${bc.HexFromBytes(buffer)}"$)
+	Interpreter.SubmitExternalData(buffer(1), buffer(2), buffer(3))
+End Sub
+
+Private Sub Serial_CommandCompleted(buffer() As Byte)
+	Log($"[Main.Serial_CommandCompleted] ${bc.HexFromBytes(buffer)}"$)
+End Sub
+
+Private Sub Serial_CommandError
+	Log($"[Main.Serial_CommandError]"$)
+End Sub
+#End Region

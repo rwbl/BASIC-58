@@ -14,8 +14,8 @@ Version=10.7
 ' ================================================================
 
 Sub Process_Globals
-	Public HelpText As String = $"
-BASIC-58 :: HELP
+
+	Public HelpText As String = $"BASIC-58 :: HELP
 ==================================================
 
 1. COMMANDS
@@ -46,6 +46,7 @@ Commands entered directly at the BASIC prompt.
 3. KEYBOARD SHORTCUTS
 
   Key     Action
+  F1      HELP
   F4      RENUM
   F5      RUN
   F6      LIST
@@ -53,6 +54,8 @@ Commands entered directly at the BASIC prompt.
   F8      SAVE
   F9      NEW
   F10     CLS
+  F11     FULLSCREEN TOGGLE
+  F12     SHOW VERSION
 
 4. PROGRAM STATEMENTS
 
@@ -225,6 +228,15 @@ Notes:
   SGN(x)        Sign of a number
   SQR(x)        Square root
 
+  ROUND(n)	    Round to the nearest integer
+  ROUND(n,m)    Round to m decimal places; negative m rounds to tens, hundreds, etc.
+
+  MAX(n,m)      Return the larger of two numbers
+  MIN(n,m)      Return the smaller of two numbers
+
+  MOD(a,b)      Returns the remainder after integer division.
+  DIV(a,b)      Returns the integer quotient after division.
+
   SIN(x)        Sine
   COS(x)        Cosine
   TAN(x)        Tangent
@@ -301,12 +313,23 @@ Notes:
   @SYS SHOW DATE
       Display system date
 
+  @SYS SHOW VERSION
+      Display version information
 
+  @SYS SHOW SETTINGS	Display current application settings.
+  @SYS SET FILEDIR "path"	Set and save the BASIC program directory.
+       The directory must already exist. The setting is stored in basic58.set and restored automatically at startup.
+
+  @SYS SET RUNCLEAR ON
+       Clear the terminal automatically when RUN starts
+
+  @SYS SET RUNCLEAR OFF
+       Keep existing terminal output when RUN starts
+	   
 12. EXECUTION COMMANDS
 
   @DELAY milliseconds
       Pause program execution asynchronously
-
 
 13. SERIAL COMMANDS
 
@@ -360,6 +383,9 @@ Notes:
         100 ASSIGN TEMP
         110 ASSIGN TEMP(1)
 
+	A value received through ASSIGN becomes a normal BASIC-58 numeric variable. 
+	A host application can retrieve thi	s value using the GetVariable method. 
+	For asynchronous programs, the host should retrieve it after the interpreter signals completion.
 
   ASSIGN ADR,CMD,VAL
       Wait for the next external serial frame.
@@ -391,8 +417,95 @@ Notes:
 
       BREAK cancels the pending ASSIGN and stops
       program execution.
+
+14. HOST COMMANDS
+
+BASIC-58 can communicate with its host application using
+the @HOST command.
+
+14.1 @HOST STATE
+
+Syntax:
+
+    @HOST STATE "NAME" VALUE
+
+Sends a state-change notification to the host application.
+
+Parameters:
+
+    NAME    State name enclosed in quotation marks.
+    VALUE   Numeric value or numeric expression.
+
+Example:
+
+    100 @HOST STATE "PUMP" 1
+    110 @HOST STATE "ALARM" 0
+
+The command raises the HostStateChanged event in the
+host application.
+
+The host application receives the state name and numeric
+value and decides what action to perform.
+
+For example, the host could:
+    - Switch a hardware output.
+    - Send an OPC UA write request.
+    - Publish an MQTT message.
+    - Send a command to an Arduino.
+    - Update an application status.
+
+IMPORTANT:
+
+The @HOST STATE command only sends a notification.
+It does not directly control hardware.
+
+Changing a BASIC-58 variable does not automatically
+generate a host notification.
+
+15. A FEW BASIC-58 REMINDERS
+   - BASIC statements are numbered.
+   - Use `LET` for assignments, for example `LET TOTAL = A + B`.
+   - `IF` branches to a line number, for example `IF ANSWER = 42 THEN 100`.
+   - `FOR` and `NEXT` repeat a group of lines.
+   - `RND(1)` produces a random value; these examples use `INT(RND(1) * N) + 1`
+        to produce an integer from 1 through N.
+   - `INPUT` asks the player to enter a value.
+   - Variable names: maximum 8 characters.
+   - FOR loop variables: single letters only.
+   - When joining text and a value with `;` in a `PRINT` statement, include a trailing space in the text if you want a space in the output.
+	  For example: `PRINT "SAVED "; SAVED`.
+
 ==================================================
 END OF HELP
 .
 "$
-End Sub
+
+Public HintsText As String = $"A FEW BASIC-58 REMINDERS
+- BASIC statements are numbered.
+- Use `LET` for assignments, for example `LET TOTAL = A + B`.
+- `IF` branches to a line number, for example `IF ANSWER = 42 THEN 100`.
+- `FOR` and `NEXT` repeat a group of lines.
+- `RND(1)` produces a random value; these examples use `INT(RND(1) * N) + 1` to produce an integer from 1 through N.
+- `INPUT` asks the player to enter a value.
+- Variable names: maximum 8 characters.
+- FOR loop variables: single letters only.
+- When joining text and a value with `;` in a `PRINT` statement, include a trailing space in the text if you want a space in the output.
+  - For example: `PRINT "SAVED "; SAVED`.
+"$
+
+Public EasterEggText As String = $"================================
+       B A S I C - 5 8
+================================
+
+HELLO, RETRO PROGRAMMER!
+
+SOME THINGS NEVER GET OLD.
+ESPECIALLY A GOOD BASIC PROGRAM.
+
+KEEP CODING And HAVE FUN!
+
+        :-)
+================================
+"$
+
+End Sub	' Process_Globals

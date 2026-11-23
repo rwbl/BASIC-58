@@ -3,11 +3,17 @@ Build1=Default,de.rwblinn.basic58
 File1=Icon.png
 File2=Main.css
 File3=MainPage.bjl
+File4=PanelEditor.bjl
+File5=PanelTerminal.bjl
 FileGroup1=Default Group
 FileGroup2=Default Group
 FileGroup3=New Group
+FileGroup4=Default Group
+FileGroup5=Default Group
 Group=Default Group
 Library1=b4xpages
+Library10=xui views
+Library11=json
 Library2=byteconverter
 Library3=cssutils
 Library4=designerutils
@@ -24,8 +30,8 @@ Module5=|relative|..\..\B4XLib\Source\B58Serial
 Module6=|relative|..\..\B4XLib\Source\B58System
 Module7=|relative|..\DesignerToolbar
 Module8=|relative|..\..\B4XLib\Source\Utils
-NumberOfFiles=3
-NumberOfLibraries=9
+NumberOfFiles=5
+NumberOfLibraries=11
 NumberOfModules=8
 Version=10.7
 @EndOfDesignText@
@@ -50,7 +56,7 @@ Version=10.7
 
 #Region Project Attributes 
 	#MainFormWidth: 800
-	#MainFormHeight: 700 
+	#MainFormHeight: 800 
 #End Region
 
 Sub Process_Globals

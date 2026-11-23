@@ -1,23 +1,46 @@
-/* BASIC-58 editable command ComboBox */
+/* BASIC-58 Special Styles */
 
-/* Editable text field */
-.combo-box:editable > .text-field {
+/* Kills JavaFX's default blue focus glow on ComboBox, Arrow Button, and TextField */
+.root {
+    -fx-focus-color: #FFBF69;
+    -fx-faint-focus-color: transparent;
+    -fx-text-inner-color: #FFBF69;
+}
+
+/* Outer ComboBox wrapper (controls border around BOTH text field + arrow button) */
+.combo-box-base {
+    -fx-background-color: #211B13;
+    -fx-border-color: #80613A;
+    -fx-border-width: 1px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+
+.combo-box-base:focused {
+    -fx-border-color: #FFBF69;
+    -fx-border-width: 1px;
+}
+
+/* Inner TextField (no separate border so it blends seamlessly with the arrow button) */
+.combo-box .text-field {
     -fx-background-color: #211B13;
     -fx-text-fill: #FFBF69;
+    -fx-text-inner-color: #FFBF69;
     -fx-prompt-text-fill: #C9954A;
     -fx-font-family: "Consolas";
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
+    -fx-border-width: 0;
     -fx-background-radius: 0;
 }
 
 /* Drop-down button */
-.combo-box:editable > .arrow-button {
+.combo-box > .arrow-button {
     -fx-background-color: #383027;
     -fx-background-radius: 0;
 }
 
 /* Drop-down arrow */
-.combo-box:editable > .arrow-button > .arrow {
+.combo-box > .arrow-button > .arrow {
     -fx-background-color: #FFBF69;
 }
 

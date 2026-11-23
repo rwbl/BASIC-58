@@ -34,6 +34,8 @@ Public Sub FormatNumber(Value As Double) As String
 	Return Result
 End Sub
 
+' FILESYSTEM
+
 ' Returns the filename from a fullpath
 Public Sub GetFileName(path As String) As String
 	' Define the JavaObject
@@ -57,6 +59,13 @@ Public Sub GetFilePath(path As String) As String
 	Return p
 End Sub
 
+Public Sub IsValidDirectory(Path As String) As Boolean
+	Dim Dir As JavaObject
+	Dir.InitializeNewInstance("java.io.File", Array(Path))
+	Return Dir.RunMethod("isDirectory", Null)
+End Sub
+
+' CONVERSION
 
 Public Sub ConvertBasicTextToUpper(Source As String) As String
 	Dim Result As StringBuilder
@@ -113,3 +122,4 @@ Public Sub CallSubMethod3(callback As Object, event As String, name As String, a
 		CallSubDelayed3(callback, eventname, arg1, arg2)
 	End If
 End Sub
+

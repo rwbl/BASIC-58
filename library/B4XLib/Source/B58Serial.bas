@@ -45,7 +45,7 @@ Private Sub Class_Globals
 	Private Const COMMAND_TIMEOUT_MS As Int = 2000
 	
 	' Helper
-	Private bc As ByteConverter
+	' Private bc As ByteConverter
 End Sub
 
 Public Sub Initialize(Callback As Object, EventName As String)
@@ -68,7 +68,7 @@ End Sub
 
 Public Sub Connect(Port As String)
 
-	Log($"[B58Serial.Connect] Port: ${Port}"$)
+	' Log($"[B58Serial.Connect] Port: ${Port}"$)
 
 	Disconnect
 
@@ -77,11 +77,11 @@ Public Sub Connect(Port As String)
 		SerialLine.SetParams(115200, 8, 1, 0)
 
 		AStreams.Initialize(SerialLine.GetInputStream, SerialLine.GetOutputStream, "AStreams")
-		Log("[B58Serial.Connect] AsyncStreams initialized: " & AStreams.IsInitialized)
+		' Log("[B58Serial.Connect] AsyncStreams initialized: " & AStreams.IsInitialized)
 		
 		mIsConnected = True
 
-		Log($"[B58Serial.Connect] Connected: ${Port}"$)
+		' Log($"[B58Serial.Connect] Connected: ${Port}"$)
 		Utils.CallSubMethod(mCallback, mEventName, "_Connected")
 
 	Catch
@@ -126,7 +126,7 @@ Public Sub Disconnect
 	mIsConnected = False
 
 	If WasConnected Then
-		Log("[B58Serial] Disconnected.")
+		' Log("[B58Serial] Disconnected.")
 		Utils.CallSubMethod(mCallback, mEventName, "_Disconnected")
 	End If
 End Sub
@@ -136,7 +136,7 @@ Public Sub IsConnected As Boolean
 End Sub
 
 Private Sub AStreams_NewData(Buffer() As Byte)
-	Log($"[B58Serial.NewData] Length=${Buffer.Length}, Hex=${bc.HexFromBytes(Buffer)}"$)
+	' Log($"[B58Serial.NewData] Length=${Buffer.Length}, Hex=${bc.HexFromBytes(Buffer)}"$)
 
 	For Each b As Byte In Buffer
 		RxBuffer.Add(b)
@@ -177,7 +177,7 @@ Private Sub AStreams_NewData(Buffer() As Byte)
 End Sub
 
 Private Sub ProcessIncomingFrame(Frame() As Byte)
-	Log($"[B58Serial.ProcessIncomingFrame] frame=${bc.HexFromBytes(Frame)}"$)
+	' Log($"[B58Serial.ProcessIncomingFrame] frame=${bc.HexFromBytes(Frame)}"$)
 	
 	If B58Protocol.CheckFrame(Frame) = False Then Return
 
@@ -185,7 +185,7 @@ Private Sub ProcessIncomingFrame(Frame() As Byte)
 	Dim Cmd As Byte = B58Protocol.GetCmd(Frame)
 	Dim Val As Byte = B58Protocol.GetVal(Frame)
 
-	Log($"[B58Serial.Frame] ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
+	' Log($"[B58Serial.Frame] ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
 
 	'No command pending: deliver incoming data.
 	If PendingCommand = False Then
@@ -236,7 +236,7 @@ End Sub
 Private Sub AStreamsWrite(Data() As Byte) As Boolean
 	Try
 		AStreams.Write(Data)
-		Log($"[B58Serial.AStreamsWrite] ${bc.HexFromBytes(Data)}"$)
+		' Log($"[B58Serial.AStreamsWrite] ${bc.HexFromBytes(Data)}"$)
 		Return True
 	Catch
 		Log($"[B58Serial.AStreamsWrite][E] ${LastException}"$)
