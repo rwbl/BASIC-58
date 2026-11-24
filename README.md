@@ -1,16 +1,20 @@
 # BASIC-58
 
+```{=html}
 <p align="center">
-<img src="images/BASIC-58-Logo.png"
+```
+`<img src="images/BASIC-58-Logo.png"
        alt="BASIC-58"
-       width="200">
+       width="200">`{=html}
+```{=html}
 </p>
-
+```
 **Version 1.0.0**
 
 **BASIC-58 - Retro BASIC Interpreter**
 
-An experimental BASIC interpreter written in BASIC (B4X), inspired by retro computing.
+An experimental BASIC interpreter written in BASIC (B4X), inspired by
+retro computing.
 
 ------------------------------------------------------------------------
 
@@ -22,7 +26,8 @@ hobby project using [B4J](https://www.b4x.com/b4j.html).
 The project explores how a BASIC interpreter works internally, from
 parsing and evaluating expressions to managing program flow and handling
 runtime errors. It was inspired by classic computers and projects such
-as [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu).
+as [MEGS65](https://github.com/MEGS65) and
+[Xemu](https://github.com/theretroweb/xemu).
 
 **BASIC-58** is also an educational project, designed to encourage learning through experimentation. 
 It provides a simple environment to explore programming concepts, write small programs, and understand how computers execute instructions.
@@ -82,11 +87,15 @@ with extensions for hardware and host application integration.
 
 ## Screenshot
 
+```{=html}
 <p align="center">
-<img src="images/BASIC-58-2.png"
+```
+`<img src="images/BASIC-58-1.png"
        alt="BASIC-58 running a temperature conversion program"
-       width="400">
+       width="400">`{=html}
+```{=html}
 </p>
+```
 
 ------------------------------------------------------------------------
 
@@ -151,22 +160,22 @@ THE SUM IS 30
 
 The following commands are entered directly at the BASIC prompt.
 
-  Command                        Description
-  ------------------------------ ----------------------------------------------------------
-  `HELP`                         Display help information
-  `RUN`                          Execute the current program
-  `NEW`                          Create a new empty program
-  `LIST`                         List the entire program
-  `LIST start-line`              List from the specified line onwards
-  `LIST start-line, end-line`    List an inclusive line range
-  `RENUM`                        Renumber the program, starting at 10 in increments of 10
-  `RENUM new-start`              Renumber from the specified starting line
-  `RENUM new-start, increment`   Specify starting line and increment
-  `SAVE`                         Save the current BASIC program
-  `LOAD`                         Load a BASIC program
-  `CLS`                          Clear the terminal
-  `BREAK`                        Interrupt program execution
-  `BYE`                          Close BASIC-58
+| Command                        | Description | 
+| ------------------------------ | -------------------- |
+| `HELP`                         | Display help information |
+| `RUN`                          | Execute the current program |
+| `NEW`                          | Create a new empty program |
+| `LIST`                         | List the entire program |
+| `LIST start-line`              | List from the specified line onwards |
+| `LIST start-line, end-line`    | List an inclusive line range |
+| `RENUM`                        | Renumber the program, starting at 10 in increments of 10 |
+| `RENUM new-start`              | Renumber from the specified starting line |
+| `RENUM new-start, increment`   | Specify starting line and increment |
+| `SAVE`                         | Save the current BASIC program |
+| `LOAD`                         | Load a BASIC program |
+| `CLS`                          | Clear the terminal |
+| `BREAK`                        | Interrupt program execution |
+| `BYE`                          | Close BASIC-58 |
 
 Expressions can also be evaluated directly:
 
@@ -232,17 +241,11 @@ meaning of individual commands.
 BASIC-58 can be embedded in a host application. The host bridge provides
 a small interface:
 
-  ----------------------------------------------------------------------------
-  Interface                    Direction               Purpose
-  ---------------------------- ----------------------- -----------------------
-  `SetVariable(Name, Value)`   Host → BASIC-58         Supply a numeric value
-
-  `GetVariable(Name)`          Host ← BASIC-58         Retrieve a numeric
-                                                       variable
-
-  `@HOST STATE "NAME" VALUE`   BASIC-58 → Host         Send a state-change
-                                                       notification
-  ----------------------------------------------------------------------------
+|  Interface                  | Direction        | Purpose
+| --------------------------- | ---------------- | -----------------------
+| `SetVariable(Name, Value)`  | Host → BASIC-58  | Supply a numeric value
+| `GetVariable(Name)`         | Host ← BASIC-58  | Retrieve a numeric variable
+| `@HOST STATE "NAME" VALUE`  | BASIC-58 → Host  | Send a state-change notification
 
 Host-supplied values are copied into the BASIC variable set when `RUN`
 starts. `@HOST STATE` raises a callback; the host application decides
@@ -259,26 +262,14 @@ documentation](docs/BASIC-58-HOST-BRIDGE.md).
 The project includes BASIC programs organized by topic. The examples are
 intended to be loaded, run, read and modified.
 
-  -----------------------------------------------------------------------
-  Folder                              Contents
-  ----------------------------------- -----------------------------------
-  `00_GETSTARTED`                     Ten small introductory programs for
-                                      young beginners
-
-  `01_LANGUAGE`                       Language statements, expressions,
-                                      functions and control flow
-
-  `02_PRACTICAL`                      Mathematics and everyday
-                                      calculation examples
-
-  `03_GAMES`                          Small interactive games
-
-  `04_HARDWARE`                       Serial communication and hardware
-                                      examples
-
-  `99_DEVELOPMENT`                    Development, debugging and
-                                      regression-test programs
-  -----------------------------------------------------------------------
+| Folder            | Contents                                                     | 
+| ----------------- | ------------------------------------------------------------ | 
+| `00_GETSTARTED`   | Small introductory programs for young beginners              | 
+| `01_LANGUAGE`     | Language statements, expressions, functions and control flow | 
+| `02_PRACTICAL`    | Mathematics and everyday calculation examples | 
+| `03_GAMES`        | Small interactive games | 
+| `04_HARDWARE`     | Serial communication and hardware examples | 
+| `99_DEVELOPMENT`  | Development, debugging and regression-test programs | 
 
 The `00_GETSTARTED` collection includes Hello, My Age, Rocket Countdown,
 Times Table, Guess Number, Dice Rolls, Mini Calculator, Treasure Hunt,
@@ -401,3 +392,4 @@ project are the property of their respective owners.
 
 > *BASIC-58 --- Made with curiosity, a little nostalgia, and the
 > conviction that BASIC still has something to teach us.*
+s
