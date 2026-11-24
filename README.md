@@ -1,14 +1,11 @@
 # BASIC-58
 
-```
 <p align="center">
-```
 `<img src="images/BASIC-58-Logo.png"
        alt="BASIC-58"
        width="200">`
-```{=html}
 </p>
-```
+
 **Version 1.0.0**
 
 **BASIC-58 - Retro BASIC Interpreter**
