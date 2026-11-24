@@ -1,11 +1,11 @@
 # BASIC-58
 
-```{=html}
+```
 <p align="center">
 ```
-`<img src="images/BASIC-58-LOGO.png"
+`<img src="images/BASIC-58-Logo.png"
        alt="BASIC-58"
-       width="200">`{=html}
+       width="200">`
 ```{=html}
 </p>
 ```
@@ -13,8 +13,7 @@
 
 **BASIC-58 - Retro BASIC Interpreter**
 
-An experimental BASIC interpreter written in BASIC (B4X), inspired by
-retro computing.
+An experimental BASIC interpreter written in BASIC (B4X), inspired by retro computing.
 
 ------------------------------------------------------------------------
 
@@ -26,8 +25,7 @@ hobby project using [B4J](https://www.b4x.com/b4j.html).
 The project explores how a BASIC interpreter works internally, from
 parsing and evaluating expressions to managing program flow and handling
 runtime errors. It was inspired by classic computers and projects such
-as [MEGS65](https://github.com/MEGS65) and
-[Xemu](https://github.com/theretroweb/xemu).
+as [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu).
 
 **BASIC-58** is also an educational project, designed to encourage learning through experimentation. 
 It provides a simple environment to explore programming concepts, write small programs, and understand how computers execute instructions.
