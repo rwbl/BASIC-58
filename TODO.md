@@ -1,26 +1,37 @@
-# TODO BASIC-58
+# TODO – BASIC-58
+
+BASIC-58 already has a substantial feature set. The next step should be to demonstrate what it can do, not simply add more language features.
+
+**Priority: Arduino examples first, then the loop constructs, then array INPUT.**
+
 
 ## ComboBox Cursor
-The combobox cursor is not visible after requesting focus.
-This workaround in works:
-```
-' Apply - esp show the combobox cursor requested via sleep workaround
+The ComboBox cursor is not visible after requesting focus.
+The following workaround currently works:
+
+```vb
 Sleep(50)
 taOutput.RequestFocus
 Sleep(20)
 cbCommands.RequestFocus
 ```
-#### Status
+### Status Low Priority.
+Workaround available. Further investigation pending.
+Revisit only if it becomes troublesome.
+
+## INPUT – Array Elements
+Allow array elements directly in INPUT statements.
+Example:
+```
+INPUT A(I)
+```
+### Status Low Priority.
+A small, well-defined language improvement. It can be handled independently.
 Not started.
 
-## ARRAY elements to INPUT
-Support array elements directly in INPUT, so INPUT A(I) becomes valid. 
-#### Status
-Not started.
-
-## Add WHILE/WEND and REPEAT/UNTIL loop constructs
-Extend BASIC-58 with two additional loop structures while maintaining a single, consistent loop-management mechanism.
-Planned syntax:
+## Additional Loop Constructs
+Add WHILE/WEND and REPEAT/UNTIL.  
+Examples:
 ```
 10 WHILE FUNFACT <= 90
 20 LET FUNFACT = INT(RND(1) * 100)
@@ -31,70 +42,58 @@ Planned syntax:
 20 LET FUNFACT = INT(RND(1) * 100)
 30 UNTIL FUNFACT > 90
 ```
-
-Implementation requirements:
-- Use the existing FOR/NEXT loop infrastructure where practical.
-- One shared loop stack and consistent loop management.
-- Support nested loops, including mixed FOR, WHILE and REPEAT loops.
-- Ensure BREAK works correctly with all loop types.
+**Requirements:**
+- Use one shared loop-management mechanism for FOR, WHILE and REPEAT.
+- Support nested and mixed loop constructs.
+- Ensure BREAK works with all loop types.
 - Preserve existing FOR/NEXT behaviour.
+Design principle: One interpreter, one loop-management mechanism.
+### Status Medium Priority.
+This is the most interesting interpreter development item. 
+Decided to use one shared loop-management mechanism. It avoids creating separate mechanisms that become difficult to maintain.
+Not started.
 
-Design principle: 
-No separate loop engines. One interpreter, one loop-management mechanism.
+## Arduino IoT Examples
+**Objective:** Create a progressive collection of practical IoT examples using an Arduino as a process simulator connected to BASIC-58 over USB serial.
 
-## 
-Excellent! Let's add this as a dedicated section in the BASIC-58 TODO list.
+### Communication
+- Arduino -> BASIC-58: ASSIGN (receiving data).
+- BASIC-58 -> Arduino: @SER (sending commands).
 
-## Arduino IoT examples**
-**Objective:** Build a progressive collection of practical IoT examples using an Arduino as a process simulator connected to BASIC-58 over USB serial.
-The examples will demonstrate both communication directions:
+### Planned examples
+1. LED control – Switch an Arduino LED ON/OFF.
+2. Temperature monitor – Receive and display simulated temperatures.
+3. Alarm system – Receive alarm states and react to them.
+4. Tank level monitoring – Monitor simulated levels and generate alarms.
+5. Pump control – Send pump ON/OFF commands.
+6. Mini SCADA – Combine measurements, indicators, alarms and commands.
 
-- Arduino → BASIC-58: `ASSIGN` (receiving external data).
-- BASIC-58 → Arduino: `@SER` (sending commands).
-
-### **Planned examples**
-
-1. **LED control**
-   Communication proven
-   BASIC-58 switches an Arduino LED ON and OFF. Turn the existing working serial command/acknowledgement test into a documented beginner example.
-
-2. **Temperature monitor**
-   Arduino sends simulated temperature values. BASIC-58 receives and displays them using `ASSIGN`.
-
-3. **Alarm system**
-   Arduino sends alarm status. BASIC-58 detects and reacts to alarm conditions.
-
-4. **Tank level monitoring**
-   Simulated level measurements with high-level and low-level alarms.
-
-5. **Pump control**
-   BASIC-58 sends pump ON/OFF commands to the Arduino using `@SER`.
-
-6. **Mini SCADA**
-
-   Combine measurements, status indicators, alarms and commands into one small process-control application.
-
-### **Implementation principles**
-
-- Arduino acts as a simulator; no real sensors are required.
-- Reuse the existing serial protocol and BASIC-58 commands.
-- Keep each example independent and easy to understand.
+### Implementation principles:
+- No real sensors required; Arduino acts as a simulator.
+- Reuse the existing serial protocol.
+- Keep examples independent and easy to understand.
+- Provide both BASIC-58 programs and Arduino firmware.
 - Introduce concepts progressively.
-- Provide both the BASIC-58 program and Arduino firmware.
+### Goal
+A small, realistic IoT/SCADA demonstration connecting BASIC programming to the physical world.
+### Status High Priority.
+This is the next practical development project. 
+It brings together several existing BASIC-58 features and gives users something tangible to experiment with.
+- LED communication already proven.
 
-**Final goal:** A small but realistic IoT/SCADA demonstration built with BASIC-58 and an Arduino.
-This gives BASIC-58 something beyond traditional BASIC exercises: a practical connection to the physical world.
-#### Status
-Not started.
+## Further Host Integration
+The initial embedded scripting interface is implemented and tested.
+### Completed
+- Host -> BASIC-58: SetVariable.
+- BASIC-58 -> Host: GetVariable.
+- BASIC-58 -> Host: @HOST STATE notifications.
+- Integration with serial communication and ASSIGN.
+### Possible future extensions
+- External functions.
+- Additional data types.
+- Further host application examples.
+### Status Low Priority.
+Initial host bridge completed -> The first milestone is done. 
+Future extensions pending.
 
-## BASIC-58 as an embedded IoT scripting engine
-
-1. Define the host-to-interpreter interface.
-2. Implement setting and retrieving numeric variables.
-3. Implement interpreter-to-host state notifications.
-4. Add a small B4J host application as a demonstration.
-5. Later consider external functions and other data types.
-
-Deliberately start with numeric values. Extend it when there is a real need.
-#### Status
-Not started.
+---

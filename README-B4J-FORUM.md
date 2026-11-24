@@ -7,7 +7,8 @@ Hi all,
 
 I'd like to share a small hobby project I've been working on: [B]BASIC-58[/B], an experimental BASIC interpreter developed with B4X/B4J.
 
-The idea started with my interest in retro computing and the classic home computers of the past. I wanted to explore how a BASIC interpreter actually works, while also creating something that I could share with my grandchild as a simple way to discover programming.
+The idea started with my interest in retro computing and the classic home computers of the past. 
+I wanted to explore how a BASIC interpreter actually works, while also creating something simple and approachable that encourages learning and experimentation.
 
 There is also a little bit of retro irony involved: BASIC-58 is itself written in BASIC, using B4X/B4J!
 
@@ -45,7 +46,8 @@ These add functionality beyond the BASIC language itself:
 - [B]@DELAY[/B] – An asynchronous execution delay, allowing BASIC programs to pause without blocking the application.
 - [B]@HOST STATE[/B] – Send named numeric state-change notifications from a BASIC program to its host application.
 
-The serial interface uses a simple five-byte binary protocol. A BASIC program can connect to a controller, send commands, receive acknowledgements and acquire numeric data from external devices using the ASSIGN statement.
+The serial interface uses a simple five-byte binary frame. 
+A BASIC program can connect to a controller, send commands, receive acknowledgements and acquire numeric data from external devices using the ASSIGN statement.
 
 For example, the following program switches an LED on and off:
 
