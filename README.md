@@ -1,14 +1,11 @@
 # BASIC-58
 
-```{=html}
-<p align="center">
-```
-`<img src="images/BASIC-58-Logo.png"
+<p align="left">
+<img src="images/BASIC-58-Logo.png"
        alt="BASIC-58"
-       width="200">`{=html}
-```{=html}
+       width="200">
 </p>
-```
+
 **Version 1.0.0**
 
 **BASIC-58 - Retro BASIC Interpreter**
@@ -87,15 +84,11 @@ with extensions for hardware and host application integration.
 
 ## Screenshot
 
-```{=html}
 <p align="center">
-```
-`<img src="images/BASIC-58-1.png"
+<img src="images/BASIC-58-1.png"
        alt="BASIC-58 running a temperature conversion program"
-       width="400">`{=html}
-```{=html}
+       width="400">
 </p>
-```
 
 ------------------------------------------------------------------------
 
