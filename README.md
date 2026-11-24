@@ -3,7 +3,7 @@
 ```{=html}
 <p align="center">
 ```
-`<img src="images/BASIC-58-Logo.png"
+`<img src="images/BASIC-58-LOGO.png"
        alt="BASIC-58"
        width="200">`{=html}
 ```{=html}
