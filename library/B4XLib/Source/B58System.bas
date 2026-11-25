@@ -17,7 +17,7 @@ Version=10.7
 Private Sub Class_Globals
 	' A tiny BASIC interpreter
 	Public APPNAME As String = "BASIC-58"
-	Public APPVERSION As String = "v1.0.0 (Build 20261123)"
+	Public APPVERSION As String = "v1.0.1 (Build 20261125)"
 	Public APPCOPYRIGHT As String = "Copyright (c) 2026 Robert W.B. Linn - MIT Licence"
 
 	' Event callback

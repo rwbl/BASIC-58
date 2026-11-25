@@ -4165,3 +4165,17 @@ Public Sub GetVariable(Name As String) As Double
 	If Variables.ContainsKey(Name) = False Then Return 0
 	Return Variables.Get(Name)
 End Sub
+
+' GetVariables
+' Host to get all current variables and their values.
+Public Sub GetVariables As Map
+	Dim Result As Map
+	Result.Initialize
+
+	For Each Name As String In Variables.Keys
+		Result.Put(Name, Variables.Get(Name))
+	Next
+
+	Return Result
+End Sub
+
