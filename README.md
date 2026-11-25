@@ -4,7 +4,7 @@
 <img src="images/BASIC-58-Logo.png" alt="BASIC-58" width="200">
 </p>
 
-**Version 1.0.0**
+**Version 1.0.1**
 
 **BASIC-58 - Retro BASIC Interpreter**
 
@@ -62,9 +62,9 @@ It provides a simple environment to explore programming concepts, write small pr
 
 ### Hardware and host integration
 
--   Serial communication using the `@SER` commands.
+-   Serial communication using the `@SER` commands (and program events).
 -   External numeric data acquisition using `ASSIGN`.
--   Asynchronous execution delay using `@DELAY`.
+-   Interpreter-managed asynchronous execution delay using `@DELAY`. The interpreter handles the delay internally; host applications do not need a timer or delay callback.
 -   Host-supplied numeric variables using `SetVariable`.
 -   Numeric variable retrieval using `GetVariable`.
 -   Host notifications using `@HOST STATE`.
@@ -216,16 +216,27 @@ The connected controller defines the meaning of individual commands.
 **BASIC-58** can be embedded in a host application.   
 The host bridge provides a small interface:
 
-|  Interface                  | Direction        | Purpose
-| --------------------------- | ---------------- | -----------------------
-| `SetVariable(Name, Value)`  | Host → BASIC-58  | Supply a numeric value
-| `GetVariable(Name)`         | Host ← BASIC-58  | Retrieve a numeric variable
-| `@HOST STATE "NAME" VALUE`  | BASIC-58 → Host  | Send a state-change notification
+| Interface                  | Direction        | Purpose |
+| -------------------------- | ---------------- | ------- |
+| `SetVariable(Name, Value)` | Host → BASIC-58  | Supply a numeric value |
+| `GetVariable(Name)`        | Host ← BASIC-58  | Retrieve one numeric variable |
+| `GetVariables()`           | Host ← BASIC-58  | Retrieve all current numeric variables |
+| `@HOST STATE "NAME" VALUE` | BASIC-58 → Host  | Send a state-change notification |
 
 - Host-supplied values are copied into the BASIC variable set when `RUN` starts.  
 - `@HOST STATE` raises a callback; the host application decides what action to perform.
 
 For the complete API, callback examples, serial integration details and implementation notes, see the [BASIC-58 Host Bridge documentation](docs/BASIC-58-HOST-BRIDGE.md).
+
+### Host application requirement
+
+**BASIC-58** does not create or initialize a serial connection automatically.
+
+To use `@SER` commands, the host application must:
+- Declare and initialize a B58Serial object.
+- Handle the Interpreter_HardwareCommand event and forward commands to B58Serial.ExecuteCommand.
+- Implement the serial callbacks and call Interpreter.ResumeHardwareCommand when a pending hardware operation completes or fails.
+- Forward received data to Interpreter.SubmitExternalData when using ASSIGN.
 
 ------------------------------------------------------------------------
 
@@ -258,7 +269,7 @@ detailed language and command descriptions are maintained separately.
 	- complete language and environment reference, including statements, functions, arrays, error handling, system commands, serial communication and host integration.
 - **[BASIC-58 Host Bridge](Documentation/BASIC58_Host_Bridge_README.md)**
 	- Host API, callbacks and integration examples.
-- `HELP.TXT` - quick reference available from the BASIC-58 application.
+- **Help** is embedded in the development application using F1.
 
 ------------------------------------------------------------------------
 
@@ -302,7 +313,7 @@ The goal is simplicity, readability and experimentation.
 
 ## Project status
 
-**BASIC-58 Version 1.0.0** is a working hobby project and a learning
+**BASIC-58** is a working hobby project and a learning
 exercise in interpreter development. The current release represents a
 tested and usable implementation of its BASIC language subset.
 

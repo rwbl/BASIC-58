@@ -71,10 +71,6 @@ Private Sub Class_Globals
 	
 	' System
 	Private System As B58System
-
-	' Delay command timer 1 second
-	Private DelayTimer As Timer
-	Private DELAY_INTERVAL As Long = 1000
 	
 	' Helper
 	Private bc As ByteConverter
@@ -103,10 +99,6 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 
 	' System commands
 	System.Initialize(Me, "System")
-		
-	' BASIC-58 execution delay timer
-	DelayTimer.Initialize("DelayTimer", DELAY_INTERVAL)
-	DelayTimer.Enabled = False
 	
 	' Create BASIC58 data directory
 	' Initialize BASIC program directory from system settings.
@@ -328,13 +320,6 @@ End Sub
 ' Update label status with ready message.
 Private Sub Interpreter_Ready
 	lblStatus.Text = "READY"
-End Sub
-
-' Interpreter_WaitingForDelay
-' handling DELAY command
-Private Sub Interpreter_WaitingForDelay
-	DelayTimer.Interval = Interpreter.GetDelayMilliseconds
-	DelayTimer.Enabled = True
 End Sub
 
 Private Sub Interpreter_HardwareCommand(Command As String)
@@ -730,6 +715,7 @@ Private Sub Save
 	FileChoose.Initialize
 	FileChoose.InitialDirectory = CurrentFilePath
 	FileChoose.InitialFileName = CurrentFileName
+	FileChoose.SetExtensionFilter("BAS", Array As String("*.bas"))
 	FileChoose.Title = "Save Program"
 
 	Filename = FileChoose.ShowSave(B4XPages.GetNativeParent(Me))
@@ -837,13 +823,6 @@ Private Sub Serial_DataReceived(Frame() As Byte)
     	B58Protocol.ToUnsigned(Adr), _
     	B58Protocol.ToUnsigned(Cmd), _
     	B58Protocol.ToUnsigned(Val))
-End Sub
-#End Region
-
-#Region Delay
-Private Sub DelayTimer_Tick
-	DelayTimer.Enabled = False
-	Interpreter.ResumeProgram
 End Sub
 #End Region
 

@@ -40,6 +40,11 @@ Private Sub Class_Globals
 	Private InputPrompt As String
 
 	' DELAY handling
+	' DELAY handling
+	Private WaitingForDelay As Boolean
+	Private DelayMilliseconds As Int
+	Private DelayTimer As Timer
+	Private DELAY_TIMER_INTERVAL As Long = 1000
 	Private WaitingForDelay As Boolean
 	Private DelayMilliseconds As Int
 	
@@ -100,6 +105,10 @@ Public Sub Initialize(Callback As Object, EventName As String)
     GosubStack.Initialize
     DataItems.Initialize
 	Functions.Initialize
+	
+	' Delay Timer
+	DelayTimer.Initialize("DelayTimer", DELAY_TIMER_INTERVAL)
+	DelayTimer.Enabled = False
 End Sub
 
 ' ----------------------------------------------------------------
@@ -299,6 +308,7 @@ Public Sub ExecuteCommand(Command As String)
 			ExternalDataTarget2 = ""
 			ExternalDataTarget3 = ""
 			RunPosition = RunLines.Size
+			DelayTimer.Enabled = False
 			WaitingForDelay = False
 			WaitingForHardwareCommand = False
 			RaiseOutput("BREAK")
@@ -1083,7 +1093,8 @@ Private Sub ContinueProgram
 				End If
 
 				WaitingForDelay = True
-				Utils.CallSubMethod(mCallback, mEventName, "_WaitingForDelay")
+				DelayTimer.Interval = DelayMilliseconds
+				DelayTimer.Enabled = True
 				Return
 
 			' BASIC-58 serial commands
@@ -1512,6 +1523,10 @@ Private Sub ParseFactor As Double
 
 	Dim Name As String = ExprText.SubString2(StartPos, ExprPos).ToUpperCase
 
+	' Predefined numeric constant.
+	If Name = "PI" Then Return cPI
+	If Name = "E" Then Return cE
+
 	SkipSpaces
 
 	'User-defined numeric function.
@@ -1866,6 +1881,11 @@ Private Sub ParseFactor As Double
 					Return Abs(Argument)
 
 				Case "INT"
+					Return Floor(Argument)
+
+				Case "FIX"
+					If Abs(Argument) < 1 Then Return 0
+					If Argument < 0 Then Return -Floor(Abs(Argument))
 					Return Floor(Argument)
 
 				Case "ROUND"
@@ -2579,6 +2599,10 @@ Private Sub EvaluateStringExpression(Expression As String) As String
 			FunctionLength = 5
 		Case FunctionName.StartsWith("CHR$(")
 			FunctionLength = 5
+		Case FunctionName.StartsWith("DATE$(")
+			FunctionLength = 6
+		Case FunctionName.StartsWith("TIME$(")
+			FunctionLength = 6
 		Case FunctionName.StartsWith("SPACE$(")
 			FunctionLength = 7
 		Case FunctionName.StartsWith("STRING$(")
@@ -2654,6 +2678,8 @@ Private Sub EvaluateStringExpression(Expression As String) As String
 	If FunctionName.StartsWith("MID$(") Then ExpectedArguments = 3
 	If FunctionName.StartsWith("STR$(") Then ExpectedArguments = 1
 	If FunctionName.StartsWith("CHR$(") Then ExpectedArguments = 1
+	If FunctionName.StartsWith("DATE$(") Then ExpectedArguments = 1
+	If FunctionName.StartsWith("TIME$(") Then ExpectedArguments = 1
 	If FunctionName.StartsWith("SPACE$(") Then ExpectedArguments = 1
 	If FunctionName.StartsWith("UCASE$(") Then ExpectedArguments = 1
 	If FunctionName.StartsWith("LCASE$(") Then ExpectedArguments = 1
@@ -2668,6 +2694,30 @@ Private Sub EvaluateStringExpression(Expression As String) As String
 	If ArgumentList.Size <> ExpectedArguments Then
 		ExprError = True
 		Return ""
+	End If
+
+	'DATE$: Return current system date.
+	If FunctionName.StartsWith("DATE$(") Then
+		Dim DateValue As Double = EvaluateNumericExpression(ArgumentList.Get(0))
+
+		If ExprError Or DateValue <> 0 Then
+			ExprError = True
+			Return ""
+		End If
+
+		Return DateTime.Date(DateTime.Now).ToUpperCase
+	End If
+
+	'TIME$: Return current system time.
+	If FunctionName.StartsWith("TIME$(") Then
+		Dim TimeValue As Double = EvaluateNumericExpression(ArgumentList.Get(0))
+
+		If ExprError Or TimeValue <> 0 Then
+			ExprError = True
+			Return ""
+		End If
+
+		Return DateTime.Time(DateTime.Now)
 	End If
 
 	'STR$: Convert numeric expression to string.
@@ -2979,6 +3029,8 @@ Private Sub IsStringExpressionForPrint(Item As String) As Boolean
 		UpperPart.StartsWith("MID$(") Or _
 		UpperPart.StartsWith("STR$(") Or _
 		UpperPart.StartsWith("CHR$(") Or _
+		UpperPart.StartsWith("DATE$(") Or _
+		UpperPart.StartsWith("TIME$(") Or _
 		UpperPart.StartsWith("SPACE$(") Or _
 		UpperPart.StartsWith("STRING$(") Or _
 		UpperPart.StartsWith("UCASE$(") Or _
@@ -4146,6 +4198,15 @@ Private Sub PrepareSerialCommand(Command As String) As Boolean
 
 	Return True
 
+End Sub
+
+' ----------------------------------------------------------------
+' DELAY TIMER
+' ----------------------------------------------------------------
+
+Private Sub DelayTimer_Tick
+	DelayTimer.Enabled = False
+	ResumeProgram
 End Sub
 
 ' ----------------------------------------------------------------

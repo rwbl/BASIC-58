@@ -1,10 +1,10 @@
 # BASIC-58 Reference Manual
 
-**Version:** 1.0.0\
-**Build:** 20261125\
+**Version:** 1.0.1  
+**Build:** 20261125  
 **Document:** Language and environment reference
 
-------------------------------------------------------------------------
+---
 
 ## 1. Introduction
 
@@ -17,27 +17,27 @@ BASIC-58 is intentionally not a complete implementation of GW-BASIC,
 Commodore BASIC or any other historical dialect. Its syntax and
 behaviour are defined by this manual and by the implemented interpreter.
 
-The interpreter itself is written in B4X/B4J BASIC --- a small example
+The interpreter itself is written in B4X/B4J BASIC — a small example
 of BASIC being used to bring BASIC back.
 
 ### 1.1 Design principles
 
--   Keep the language small and approachable.
--   Prefer familiar, readable BASIC statements.
--   Keep the interpreter independent of specific hardware.
--   Provide simple interfaces to external devices and host applications.
--   Preserve a straightforward programming experience.
+- Keep the language small and approachable.
+- Prefer familiar, readable BASIC statements.
+- Keep the interpreter independent of specific hardware.
+- Provide simple interfaces to external devices and host applications.
+- Preserve a straightforward programming experience.
 
 ### 1.2 Conventions used in this manual
 
--   BASIC keywords and command names are shown in uppercase.
--   Items in square brackets are optional.
--   `...` indicates that an item can be repeated.
--   `variable`, `expression` and `line` represent values supplied by the
-    programmer.
--   Examples use numbered program lines.
+- BASIC keywords and command names are shown in uppercase.
+- Items in square brackets are optional.
+- `...` indicates that an item can be repeated.
+- `variable`, `expression` and `line` represent values supplied by the
+  programmer.
+- Examples use numbered program lines.
 
-------------------------------------------------------------------------
+---
 
 ## 2. Using the BASIC-58 environment
 
@@ -51,27 +51,27 @@ to display the built-in help information.
 
 These commands are entered directly at the BASIC prompt.
 
-  Command                       Description
-  ----------------------------- --------------------------------------
-  `HELP`                        Display built-in help
-  `LIST`                        List the current program
-  `LIST start-line`             List from the specified line onwards
-  `LIST start-line, end-line`   List an inclusive line range
-  `RUN`                         Execute the current program
-  `NEW`                         Create a new empty program
-  `LOAD [filename]`             Load a BASIC program
-  `SAVE [filename]`             Save the current BASIC program
-  `RENUM`                       Renumber the current program
-  `CLS`                         Clear the terminal
-  `BREAK`                       Interrupt program execution
-  `BYE`                         Close BASIC-58
+| Command | Description |
+| --- | --- |
+| `HELP` | Display built-in help |
+| `LIST` | List the current program |
+| `LIST start-line` | List from the specified line onwards |
+| `LIST start-line, end-line` | List an inclusive line range |
+| `RUN` | Execute the current program |
+| `NEW` | Create a new empty program |
+| `LOAD [filename]` | Load a BASIC program |
+| `SAVE [filename]` | Save the current BASIC program |
+| `RENUM` | Renumber the current program |
+| `CLS` | Clear the terminal |
+| `BREAK` | Interrupt program execution |
+| `BYE` | Close BASIC-58 |
 
 `PRINT expression` can also be entered directly to evaluate and display
 an expression.
 
 Examples:
 
-``` basic
+```basic
 PRINT 10 + 20
 PRINT "HELLO FROM BASIC-58"
 ```
@@ -81,14 +81,14 @@ PRINT "HELLO FROM BASIC-58"
 A BASIC program consists of numbered lines. Entering a line with an
 existing line number replaces that line.
 
-``` basic
+```basic
 10 PRINT "HELLO"
 20 PRINT "WORLD"
 ```
 
 Entering a line number without a statement deletes that line:
 
-``` basic
+```basic
 20
 ```
 
@@ -102,7 +102,7 @@ steps of 10.
 
 For example:
 
-``` basic
+```basic
 LET A = 10
 PRINT A
 END
@@ -110,7 +110,7 @@ END
 
 is interpreted as:
 
-``` basic
+```basic
 10 LET A = 10
 20 PRINT A
 30 END
@@ -123,21 +123,15 @@ Explicit line numbers are preserved.
 `RENUM` renumbers the program and updates line references in supported
 statements such as `GOTO`, `GOSUB` and `IF ... THEN`.
 
-  -----------------------------------------------------------------------
-  Syntax                              Description
-  ----------------------------------- -----------------------------------
-  `RENUM`                             Start at 10, increment by 10
-
-  `RENUM new-start`                   Use the specified starting line,
-                                      increment by 10
-
-  `RENUM new-start, increment`        Specify both starting line and
-                                      increment
-  -----------------------------------------------------------------------
+| Syntax | Description |
+| --- | --- |
+| `RENUM` | Start at 10, increment by 10 |
+| `RENUM new-start` | Use the specified starting line, increment by 10 |
+| `RENUM new-start, increment` | Specify both starting line and increment |
 
 Examples:
 
-``` text
+```text
 RENUM
 RENUM 100
 RENUM 100,5
@@ -156,7 +150,7 @@ The editor tracks modifications so unsaved changes can be identified.
 When an operation would discard modified source code, BASIC-58 asks for
 confirmation.
 
-------------------------------------------------------------------------
+---
 
 ## 3. BASIC language fundamentals
 
@@ -168,7 +162,7 @@ changes the execution position.
 
 A minimal program:
 
-``` basic
+```basic
 10 PRINT "HELLO FROM BASIC-58"
 20 END
 ```
@@ -180,7 +174,7 @@ BASIC-58 supports numeric and string variables.
 Numeric variables use names without a type suffix. String variable names
 end with `$`.
 
-``` basic
+```basic
 10 LET TOTAL = 100
 20 LET NAME$ = "BASIC-58"
 30 PRINT TOTAL
@@ -198,14 +192,14 @@ Ordinary variable assignments require the `LET` keyword.
 
 Correct:
 
-``` basic
+```basic
 10 LET A = 10
 20 LET B = A * 2
 ```
 
 Incorrect:
 
-``` basic
+```basic
 10 A = 10
 20 B = A * 2
 ```
@@ -215,7 +209,7 @@ exceptions and do not require `LET`.
 
 Array elements are assigned with `LET` as well:
 
-``` basic
+```basic
 10 DIM VALUES(5)
 20 LET VALUES(1) = 100
 ```
@@ -225,7 +219,7 @@ Array elements are assigned with `LET` as well:
 Expressions can contain numeric constants, variables, array elements,
 function calls, operators and parentheses.
 
-``` basic
+```basic
 10 LET A = 10 + 5 * 2
 20 LET B = (10 + 5) * 2
 30 PRINT A
@@ -235,7 +229,7 @@ function calls, operators and parentheses.
 
 Expected output:
 
-``` text
+```text
 20
 30
 ```
@@ -244,27 +238,27 @@ Parentheses can be used to make evaluation order explicit.
 
 ### 3.5 Arithmetic operators
 
-  Operator   Description
-  ---------- ----------------
-  `+`        Addition
-  `-`        Subtraction
-  `*`        Multiplication
-  `/`        Division
+| Operator | Description |
+| --- | --- |
+| `+` | Addition |
+| `-` | Subtraction |
+| `*` | Multiplication |
+| `/` | Division |
 
 ### 3.6 Comparison operators
 
 Comparison operators are used in conditional expressions.
 
-  Operator   Description
-  ---------- -----------------------
-  `=`        Equal
-  `<>`       Not equal
-  `<`        Less than
-  `>`        Greater than
-  `<=`       Less than or equal
-  `>=`       Greater than or equal
+| Operator | Description |
+| --- | --- |
+| `=` | Equal |
+| `<>` | Not equal |
+| `<` | Less than |
+| `>` | Greater than |
+| `<=` | Less than or equal |
+| `>=` | Greater than or equal |
 
-------------------------------------------------------------------------
+---
 
 ## 4. Program statements
 
@@ -273,13 +267,13 @@ Comparison operators are used in conditional expressions.
 Assign a numeric or string expression to a variable or numeric array
 element.
 
-``` basic
+```basic
 LET variable = expression
 ```
 
 Examples:
 
-``` basic
+```basic
 10 LET COUNT = 10
 20 LET TOTAL = COUNT * 5
 30 LET TITLE$ = "BASIC-58"
@@ -289,18 +283,18 @@ Examples:
 
 Display text, numeric expressions and string expressions.
 
-``` basic
+```basic
 PRINT expression [, expression ...]
 ```
 
 `PRINT` supports these separators and formatting functions:
 
-  Feature    Description
-  ---------- ---------------------------------------------------------------
-  `;`        Separate output items without automatically inserting a space
-  `,`        Advance output to the next print zone
-  `TAB(n)`   Position output at the specified column
-  `SPC(n)`   Insert the specified number of spaces
+| Feature | Description |
+| --- | --- |
+| `;` | Separate output items without automatically inserting a space |
+| `,` | Advance output to the next print zone |
+| `TAB(n)` | Position output at the specified column |
+| `SPC(n)` | Insert the specified number of spaces |
 
 A trailing semicolon or comma suppresses the automatic newline at the
 end of a `PRINT` statement.
@@ -309,14 +303,14 @@ end of a `PRINT` statement.
 space in a text literal when one is required before the next output
 item.
 
-``` basic
+```basic
 10 LET SAVED = 100
 20 PRINT "YOU HAVE SAVED "; SAVED
 ```
 
 Output:
 
-``` text
+```text
 YOU HAVE SAVED 100
 ```
 
@@ -324,13 +318,13 @@ YOU HAVE SAVED 100
 
 Read values from the keyboard.
 
-``` basic
+```basic
 INPUT [prompt;] variable [, variable ...]
 ```
 
 Example:
 
-``` basic
+```basic
 10 INPUT "WHAT IS YOUR NAME? "; NAME$
 20 PRINT "HELLO "; NAME$
 30 END
@@ -343,13 +337,13 @@ Example:
 
 Perform a conditional branch to a program line.
 
-``` basic
+```basic
 IF condition THEN line
 ```
 
 Example:
 
-``` basic
+```basic
 10 IF LEVEL < 30 THEN 100
 20 PRINT "LEVEL IS NORMAL"
 30 END
@@ -362,13 +356,13 @@ statements and `THEN GOTO` are not supported.
 
 Correct:
 
-``` basic
+```basic
 10 IF A > 10 THEN 100
 ```
 
 Not supported:
 
-``` basic
+```basic
 10 IF A > 10 THEN GOTO 100
 20 IF A > 10 THEN LET B = 5
 30 IF A > 10 THEN PRINT A
@@ -380,13 +374,13 @@ Use separate lines for the actions.
 
 Jump to a specified program line.
 
-``` basic
+```basic
 GOTO line
 ```
 
 Example:
 
-``` basic
+```basic
 10 PRINT "START"
 20 GOTO 50
 30 PRINT "SKIPPED"
@@ -398,14 +392,14 @@ Example:
 
 Call a subroutine and return to the statement following the `GOSUB`.
 
-``` basic
+```basic
 GOSUB line
 RETURN
 ```
 
 Example:
 
-``` basic
+```basic
 10 PRINT "MAIN PROGRAM"
 20 GOSUB 100
 30 PRINT "BACK IN MAIN"
@@ -418,7 +412,7 @@ Example:
 
 Repeat a group of statements using a counted loop.
 
-``` basic
+```basic
 FOR variable = start TO limit [STEP value]
 ...
 NEXT [variable]
@@ -426,7 +420,7 @@ NEXT [variable]
 
 Examples:
 
-``` basic
+```basic
 10 FOR I = 1 TO 5
 20 PRINT I
 30 NEXT I
@@ -435,7 +429,7 @@ Examples:
 
 A step value can be positive or negative:
 
-``` basic
+```basic
 10 FOR I = 10 TO 0 STEP -2
 20 PRINT I
 30 NEXT I
@@ -449,7 +443,7 @@ Loop variables must be single letters from `A` to `Z`. Nested
 
 Select a line from a list using a numeric expression.
 
-``` basic
+```basic
 ON expression GOTO line1, line2, ...
 ```
 
@@ -457,7 +451,7 @@ ON expression GOTO line1, line2, ...
 
 Select and call a subroutine from a list using a numeric expression.
 
-``` basic
+```basic
 ON expression GOSUB line1, line2, ...
 ```
 
@@ -466,7 +460,7 @@ ON expression GOSUB line1, line2, ...
 `DATA` defines values in a program. `READ` assigns successive values to
 variables. `RESTORE` resets the DATA read position.
 
-``` basic
+```basic
 10 DATA 10,20,30,40,50
 20 FOR I = 1 TO 5
 30 READ A
@@ -482,13 +476,13 @@ variables. `RESTORE` resets the DATA read position.
 
 Declare a one-dimensional numeric array.
 
-``` basic
+```basic
 DIM arrayname(size)
 ```
 
 Example:
 
-``` basic
+```basic
 10 DIM TEMPERATURE(10)
 20 LET TEMPERATURE(1) = 21.5
 30 LET TEMPERATURE(2) = 22
@@ -504,7 +498,7 @@ they exist.
 
 Remove a declared array from memory.
 
-``` basic
+```basic
 ERASE arrayname
 ```
 
@@ -514,14 +508,14 @@ After an array is erased, it can be declared again using `DIM`.
 
 Exchange the values of two numeric variables or array elements.
 
-``` basic
+```basic
 SWAP variable1, variable2
 ```
 
 `SWAP` supports numeric variables, array elements, and combinations of a
 numeric variable and an array element.
 
-``` basic
+```basic
 10 LET A = 10
 20 LET B = 20
 30 SWAP A, B
@@ -534,7 +528,7 @@ numeric variable and an array element.
 
 Initialize the random number generator.
 
-``` basic
+```basic
 RANDOMIZE [expression]
 ```
 
@@ -542,7 +536,7 @@ RANDOMIZE [expression]
 
 Add a comment to a program line.
 
-``` basic
+```basic
 10 REM THIS IS A COMMENT
 ```
 
@@ -550,11 +544,11 @@ Add a comment to a program line.
 
 End program execution.
 
-``` basic
+```basic
 END
 ```
 
-------------------------------------------------------------------------
+---
 
 ## 5. Arrays
 
@@ -564,14 +558,14 @@ BASIC-58 supports one-dimensional numeric arrays.
 
 Declare an array with `DIM` before using it.
 
-``` basic
+```basic
 10 DIM A(10)
 ```
 
 The declared size is the number of elements. Indices start at 1:
 
--   `A(1)` is the first element.
--   `A(10)` is the tenth element.
+- `A(1)` is the first element.
+- `A(10)` is the tenth element.
 
 Index 0 is not valid. Array indices must be integer values. Access
 outside the declared range causes an error.
@@ -580,7 +574,7 @@ outside the declared range causes an error.
 
 Use `LET` to assign an array element:
 
-``` basic
+```basic
 10 DIM A(5)
 20 LET A(1) = 100
 30 LET A(2) = 200
@@ -591,7 +585,7 @@ Use `LET` to assign an array element:
 
 Indices can be variables or numeric expressions:
 
-``` basic
+```basic
 10 DIM A(10)
 20 FOR I = 1 TO 10
 30 LET A(I) = I * I
@@ -604,19 +598,19 @@ Indices can be variables or numeric expressions:
 Return the upper array index, which is also the number of elements
 because BASIC-58 arrays start at index 1.
 
-``` basic
+```basic
 PRINT UBOUND(A)
 ```
 
 ### 5.4 Array limitations
 
--   Only one-dimensional numeric arrays are supported.
--   String arrays and multidimensional arrays are not supported.
--   Arrays are initialized with zero values.
--   Arrays are cleared by `RUN` and `NEW`.
--   `ERASE` removes an array so it can be declared again.
+- Only one-dimensional numeric arrays are supported.
+- String arrays and multidimensional arrays are not supported.
+- Arrays are initialized with zero values.
+- Arrays are cleared by `RUN` and `NEW`.
+- `ERASE` removes an array so it can be declared again.
 
-------------------------------------------------------------------------
+---
 
 ## 6. User-defined numeric functions
 
@@ -624,7 +618,7 @@ BASIC-58 supports user-defined numeric functions using `DEF FN`.
 
 ### 6.1 Definition
 
-``` basic
+```basic
 DEF FN name(parameter) = expression
 DEF FN name(parameter, parameter, ...) = expression
 ```
@@ -634,7 +628,7 @@ a numeric expression.
 
 Example:
 
-``` basic
+```basic
 10 DEF FN DOUBLE(X) = X * 2
 20 DEF FN ADD(X,Y) = X + Y
 30 PRINT FN DOUBLE(21)
@@ -644,51 +638,70 @@ Example:
 
 Expected output:
 
-``` text
+```text
 42
 42
 ```
 
 ### 6.2 Function behaviour
 
--   Arguments can be expressions.
--   Functions can call other user-defined functions.
--   Nested function calls are supported.
--   A function must be defined before it is called during program
-    execution.
--   Defining an existing function again replaces its previous
-    definition.
--   User-defined functions return numeric results.
+- Arguments can be expressions.
+- Functions can call other user-defined functions.
+- Nested function calls are supported.
+- A function must be defined before it is called during program
+  execution.
+- Defining an existing function again replaces its previous
+  definition.
+- User-defined functions return numeric results.
 
-------------------------------------------------------------------------
+---
 
 ## 7. Numeric functions
 
 The following numeric functions are available.
 
-  Function          Description
-  ----------------- -----------------------------------
-  `ABS(x)`          Absolute value
-  `INT(x)`          Integer part
-  `SGN(x)`          Sign of a number
-  `SQR(x)`          Square root
-  `SIN(x)`          Sine
-  `COS(x)`          Cosine
-  `TAN(x)`          Tangent
-  `LOG(x)`          Natural logarithm
-  `EXP(x)`          Exponential
-  `RND(1)`          Random number
-  `ROUND(n)`        Round to the nearest integer
-  `ROUND(n,m)`      Round to `m` decimal places
-  `MAX(a,b)`        Return the larger of two numbers
-  `MIN(a,b)`        Return the smaller of two numbers
-  `MOD(a,b)`        Remainder of integer division
-  `DIV(a,b)`        Integer quotient of division
-  `UBOUND(array)`   Return the upper array index
+| Function | Description |
+| --- | --- |
+| `ABS(x)` | Absolute value |
+| `INT(x)` | Integer part |
+| `FIX(x)` | Truncate toward zero |
+| `SGN(x)` | Sign of a number |
+| `SQR(x)` | Square root |
+| `SIN(x)` | Sine |
+| `COS(x)` | Cosine |
+| `TAN(x)` | Tangent |
+| `LOG(x)` | Natural logarithm |
+| `EXP(x)` | Exponential |
+| `RND(1)` | Random number |
+| `ROUND(n)` | Round to the nearest integer |
+| `ROUND(n,m)` | Round to `m` decimal places |
+| `MAX(a,b)` | Return the larger of two numbers |
+| `MIN(a,b)` | Return the smaller of two numbers |
+| `MOD(a,b)` | Remainder of integer division |
+| `DIV(a,b)` | Integer quotient of division |
+| `UBOUND(array)` | Return the upper array index |
 
 Trigonometric functions use radians.
 
-### 7.1 ROUND
+### 7.1 Predefined numeric constants
+
+BASIC-58 provides two predefined numeric constants:
+
+| Constant | Description |
+| --- | --- |
+| `PI` | Mathematical constant π |
+| `E` | Mathematical constant e |
+
+Example:
+
+```basic
+10 PRINT PI
+20 PRINT E
+30 PRINT PI * E
+40 END
+```
+
+### 7.2 ROUND
 
 `ROUND(n)` rounds to the nearest integer.
 
@@ -697,7 +710,7 @@ negative precision rounds to tens, hundreds, and so on.
 
 Examples:
 
-``` basic
+```basic
 10 PRINT ROUND(3.7)
 20 PRINT ROUND(3.14159, 2)
 30 PRINT ROUND(123.456, -1)
@@ -706,93 +719,111 @@ Examples:
 
 Results:
 
-``` text
+```text
 4
 3.14
 120
 ```
 
-### 7.2 MAX and MIN
+### 7.3 MAX and MIN
 
-``` basic
+```basic
 MAX(a,b)
 MIN(a,b)
 ```
 
 Both arguments are numeric expressions.
 
-### 7.3 MOD and DIV
+### 7.4 MOD and DIV
 
 `MOD(a,b)` returns the remainder of integer division. `DIV(a,b)` returns
 the integer quotient, truncated toward zero.
 
 Examples:
 
-  Expression      Result
-  ------------- --------
-  `17 MOD 5`         `2`
-  `17 DIV 5`         `3`
-  `-17 MOD 5`       `-2`
-  `-17 DIV 5`       `-3`
-  `17 MOD -5`        `2`
-  `17 DIV -5`       `-3`
+| Expression | Result |
+| --- | ---: |
+| `17 MOD 5` | `2` |
+| `17 DIV 5` | `3` |
+| `-17 MOD 5` | `-2` |
+| `-17 DIV 5` | `-3` |
+| `17 MOD -5` | `2` |
+| `17 DIV -5` | `-3` |
 
 The second argument must be non-zero. Division by zero produces a
 BASIC-58 runtime expression error.
 
-### 7.4 Random numbers
+### 7.5 Random numbers
 
 Use `RANDOMIZE` to initialize the random number generator and `RND(1)`
 to obtain a random value.
 
 Example: generate a dice value from 1 through 6.
 
-``` basic
+```basic
 10 RANDOMIZE
 20 LET DICE = INT(RND(1) * 6) + 1
 30 PRINT "DICE: "; DICE
 40 END
 ```
 
-------------------------------------------------------------------------
+---
 
 ## 8. String and conversion functions
 
 BASIC-58 provides the following string functions.
 
-  Function         Description
-  ---------------- -------------------------------------------------
-  `LEN(s)`         Return string length
-  `LEFT$(s,n)`     Return the leftmost `n` characters
-  `RIGHT$(s,n)`    Return the rightmost `n` characters
-  `MID$(s,p,n)`    Extract `n` characters starting at position `p`
-  `INSTR(s,t)`     Find a substring
-  `STR$(x)`        Convert a number to a string
-  `VAL(s)`         Convert a string to a number
-  `ASC(s)`         Return a character code
-  `CHR$(n)`        Return the character for a code
-  `SPACE$(n)`      Create a string containing spaces
-  `STRING$(n,c)`   Create a repeated-character string
-  `UCASE$(s)`      Convert to uppercase
-  `LCASE$(s)`      Convert to lowercase
-  `LTRIM$(s)`      Remove leading spaces
-  `RTRIM$(s)`      Remove trailing spaces
-  `TRIM$(s)`       Remove leading and trailing spaces
+| Function | Description |
+| --- | --- |
+| `LEN(s)` | Return string length |
+| `LEFT$(s,n)` | Return the leftmost `n` characters |
+| `RIGHT$(s,n)` | Return the rightmost `n` characters |
+| `MID$(s,p,n)` | Extract `n` characters starting at position `p` |
+| `INSTR(s,t)` | Find a substring |
+| `STR$(x)` | Convert a number to a string |
+| `VAL(s)` | Convert a string to a number |
+| `ASC(s)` | Return a character code |
+| `CHR$(n)` | Return the character for a code |
+| `SPACE$(n)` | Create a string containing spaces |
+| `STRING$(n,c)` | Create a repeated-character string |
+| `UCASE$(s)` | Convert to uppercase |
+| `LCASE$(s)` | Convert to lowercase |
+| `LTRIM$(s)` | Remove leading spaces |
+| `RTRIM$(s)` | Remove trailing spaces |
+| `TRIM$(s)` | Remove leading and trailing spaces |
+| `DATE$(0)` | Return the current system date |
+| `TIME$(0)` | Return the current system time |
 
-### 8.1 Number base conversion
+### 8.1 Date and time
+
+`DATE$(0)` returns the current system date. `TIME$(0)` returns the
+current system time.
+
+Both functions use the current B4X date and time formatting settings
+and currently accept only the argument `0`.
+
+Example:
+
+```basic
+10 PRINT "DATE: "; DATE$(0)
+20 PRINT "TIME: "; TIME$(0)
+30 END
+```
+
+### 8.2 Number base conversion
 
 BASIC-58 provides functions that convert integer values to strings in
 different number bases.
 
-  Function   Description
-  ---------- -----------------------------------
-  `HEX(x)`   Convert an integer to hexadecimal
-  `BIN(x)`   Convert an integer to binary
-  `OCT(x)`   Convert an integer to octal
+| Function | Description |
+| --- | --- |
+| `HEX(x)` | Convert an integer to hexadecimal |
+| `BIN(x)` | Convert an integer to binary |
+| `OCT(x)` | Convert an integer to octal |
 
 Example:
 
-``` basic
+```basic
 10 LET VALUE = 1958
 20 PRINT "DECIMAL: "; VALUE
 30 PRINT "HEX: "; HEX(VALUE)
@@ -804,7 +835,7 @@ Example:
 These functions return strings and can be used in `PRINT` statements and
 string expressions.
 
-------------------------------------------------------------------------
+---
 
 ## 9. Error handling
 
@@ -814,13 +845,13 @@ BASIC-58 supports BASIC-style runtime error handling.
 
 Enable an error handler at the specified line.
 
-``` basic
+```basic
 ON ERROR GOTO line
 ```
 
 Disable the error handler:
 
-``` basic
+```basic
 ON ERROR GOTO 0
 ```
 
@@ -828,7 +859,7 @@ ON ERROR GOTO 0
 
 Retry the statement that caused the error.
 
-``` basic
+```basic
 RESUME
 ```
 
@@ -837,20 +868,20 @@ RESUME
 Continue execution at the statement following the one that caused the
 error.
 
-``` basic
+```basic
 RESUME NEXT
 ```
 
 ### 9.4 ERR and ERL
 
-  Function   Description
-  ---------- ----------------------------------------------
-  `ERR`      Current error code
-  `ERL`      Program line number where the error occurred
+| Function | Description |
+| --- | --- |
+| `ERR` | Current error code |
+| `ERL` | Program line number where the error occurred |
 
 Example:
 
-``` basic
+```basic
 10 ON ERROR GOTO 100
 20 LET A = 10
 30 LET B = 0
@@ -866,16 +897,16 @@ Runtime errors are reported by the interpreter. When an error handler is
 enabled, the program can inspect the error information and decide
 whether to resume execution.
 
-------------------------------------------------------------------------
+---
 
 ## 10. Execution tracing
 
 `TRACE ON` and `TRACE OFF` control execution tracing.
 
-  Statement     Description
-  ------------- ---------------------------
-  `TRACE ON`    Enable execution tracing
-  `TRACE OFF`   Disable execution tracing
+| Statement | Description |
+| --- | --- |
+| `TRACE ON` | Enable execution tracing |
+| `TRACE OFF` | Disable execution tracing |
 
 While tracing is enabled, BASIC-58 displays the line number of each
 executed program statement using the `[TRACE]` prefix. A line executed
@@ -883,7 +914,7 @@ repeatedly in a loop is displayed each time.
 
 Example:
 
-``` basic
+```basic
 10 TRACE ON
 20 FOR I = 1 TO 3
 30 PRINT I
@@ -892,7 +923,7 @@ Example:
 60 END
 ```
 
-------------------------------------------------------------------------
+---
 
 ## 11. BASIC-58 system and execution commands
 
@@ -901,23 +932,23 @@ System commands begin with `@SYS`. The execution delay command is
 
 ### 11.1 Display system information
 
-``` text
+```text
 @SYS SHOW TIME
 @SYS SHOW DATE
 @SYS SHOW VERSION
 @SYS SHOW SETTINGS
 ```
 
-  Command                Description
-  ---------------------- --------------------------------------
-  `@SYS SHOW TIME`       Display system time
-  `@SYS SHOW DATE`       Display system date
-  `@SYS SHOW VERSION`    Display BASIC-58 version information
-  `@SYS SHOW SETTINGS`   Display current application settings
+| Command | Description |
+| --- | --- |
+| `@SYS SHOW TIME` | Display system time |
+| `@SYS SHOW DATE` | Display system date |
+| `@SYS SHOW VERSION` | Display BASIC-58 version information |
+| `@SYS SHOW SETTINGS` | Display current application settings |
 
 ### 11.2 Set the program directory
 
-``` text
+```text
 @SYS SET FILEDIR "path"
 ```
 
@@ -926,7 +957,7 @@ already exist.
 
 Example:
 
-``` text
+```text
 @SYS SET FILEDIR "D:\BASIC58\Programs"
 ```
 
@@ -935,22 +966,22 @@ startup.
 
 ### 11.3 Clear terminal automatically on RUN
 
-``` text
+```text
 @SYS SET RUNCLEAR ON
 @SYS SET RUNCLEAR OFF
 ```
 
-  Setting   Behaviour
-  --------- ---------------------------------------------------------
-  `ON`      Clear the terminal automatically when a program starts
-  `OFF`     Preserve existing terminal output when a program starts
+| Setting | Behaviour |
+| --- | --- |
+| `ON` | Clear the terminal automatically when a program starts |
+| `OFF` | Preserve existing terminal output when a program starts |
 
 `RUNCLEAR` defaults to `ON`. Its value is stored in `basic58.set` and
 restored at startup.
 
 ### 11.4 Execution delay
 
-``` basic
+```basic
 @DELAY milliseconds
 ```
 
@@ -958,17 +989,19 @@ Pause program execution asynchronously for the specified number of
 milliseconds.
 
 The application remains responsive while the delay is in progress.
+The delay is managed internally by the interpreter; host applications
+do not need to implement a timer or delay callback.
 
 Example:
 
-``` basic
+```basic
 10 PRINT "WAITING..."
 20 @DELAY 1000
 30 PRINT "CONTINUING"
 40 END
 ```
 
-------------------------------------------------------------------------
+---
 
 ## 12. Serial communication and hardware control
 
@@ -978,17 +1011,17 @@ commands.
 
 ### 12.1 Serial connection commands
 
-``` text
+```text
 @SER CONNECT COMx
 @SER DISCONNECT
 @SER LISTPORTS
 ```
 
-  Command               Description
-  --------------------- --------------------------------------
-  `@SER CONNECT COMx`   Connect to the specified serial port
-  `@SER DISCONNECT`     Disconnect from the controller
-  `@SER LISTPORTS`      List available serial ports
+| Command | Description |
+| --- | --- |
+| `@SER CONNECT COMx` | Connect to the specified serial port |
+| `@SER DISCONNECT` | Disconnect from the controller |
+| `@SER LISTPORTS` | List available serial ports |
 
 Replace `COMx` with the port assigned to the connected device, for
 example `COM10`.
@@ -999,28 +1032,28 @@ continuing.
 
 ### 12.2 Generic serial command
 
-``` basic
+```basic
 @SER ADR CMD VAL
 ```
 
 Send a command consisting of three numeric byte values.
 
-  Parameter   Description                     Range
-  ----------- ---------------------------- --------
-  `ADR`       Device address                 0--255
-  `CMD`       Command code                   0--255
-  `VAL`       Command value or parameter     0--255
+| Parameter | Description | Range |
+| --- | --- | ---: |
+| `ADR` | Device address | 0–255 |
+| `CMD` | Command code | 0–255 |
+| `VAL` | Command value or parameter | 0–255 |
 
 Each parameter accepts a numeric literal, numeric variable or
-parenthesized numeric expression. Expressions containing spaces must be
-enclosed in parentheses.
+parenthesized numeric expression. Expressions containing spaces must
+be enclosed in parentheses.
 
 Exactly three parameters are required. Each parameter must evaluate to
-an integer in the range 0--255.
+an integer in the range 0–255.
 
 Example using literals:
 
-``` basic
+```basic
 10 @SER CONNECT COM10
 20 @SER 18 4 1
 30 @DELAY 1000
@@ -1031,7 +1064,7 @@ Example using literals:
 
 Example using variables and expressions:
 
-``` basic
+```basic
 10 @SER CONNECT COM10
 20 LET LED = 18
 30 LET CMD = 4
@@ -1050,17 +1083,17 @@ represents.
 
 Each serial message uses the BASIC-58 five-byte frame:
 
-    Byte Description
-  ------ ------------------------
-       1 Header: `0x19`
-       2 Device address (`ADR`)
-       3 Command (`CMD`)
-       4 Value (`VAL`)
-       5 Footer: `0x58`
+| Byte | Description |
+| ---: | --- |
+| 1 | Header: `0x19` |
+| 2 | Device address (`ADR`) |
+| 3 | Command (`CMD`) |
+| 4 | Value (`VAL`) |
+| 5 | Footer: `0x58` |
 
 Frame layout:
 
-``` text
+```text
 0x19 | ADR | CMD | VAL | 0x58
 ```
 
@@ -1072,19 +1105,19 @@ Communication is bi-directional. BASIC-58 sends commands and receives
 frames from the connected device. The host application handles serial
 transport, framing, acknowledgement handling and communication timeouts.
 
-### 12.4 ASSIGN --- external numeric data
+### 12.4 ASSIGN — external numeric data
 
 `ASSIGN` waits for the next incoming serial frame and assigns its
 numeric data to BASIC-58 variables.
 
 `ASSIGN` is separate from keyboard `INPUT`:
 
--   `INPUT` reads values entered by the user.
--   `ASSIGN` receives numeric values from an external device.
+- `INPUT` reads values entered by the user.
+- `ASSIGN` receives numeric values from an external device.
 
 #### Single-value assignment
 
-``` basic
+```basic
 ASSIGN variable
 ```
 
@@ -1093,14 +1126,14 @@ variable or an existing numeric array element.
 
 Examples:
 
-``` basic
+```basic
 100 ASSIGN TEMP
 110 ASSIGN TEMPERATURE(1)
 ```
 
 Complete example:
 
-``` basic
+```basic
 10 @SER CONNECT COM10
 20 DIM TEMPERATURE(10)
 30 FOR I = 1 TO 10
@@ -1113,22 +1146,22 @@ Complete example:
 
 #### Three-field assignment
 
-``` basic
+```basic
 ASSIGN ADR,CMD,VAL
 ```
 
 The next incoming frame is received and its address, command and value
 fields are assigned to three numeric variables.
 
-  Variable   Received field
-  ---------- ----------------
-  `ADR`      Device address
-  `CMD`      Command code
-  `VAL`      Command value
+| Variable | Received field |
+| --- | --- |
+| `ADR` | Device address |
+| `CMD` | Command code |
+| `VAL` | Command value |
 
 Example:
 
-``` basic
+```basic
 10 @SER CONNECT COM10
 20 PRINT "WAITING FOR TEMPERATURE..."
 30 ASSIGN ADR,CMD,VAL
@@ -1149,7 +1182,7 @@ are ignored and the program waits for another frame.
 If the serial connection is lost while `ASSIGN` is waiting, BASIC-58
 stops program execution with:
 
-``` text
+```text
 ?SERIAL CONNECTION LOST
 ```
 
@@ -1160,7 +1193,7 @@ A value received through `ASSIGN` becomes a normal BASIC-58 numeric
 variable. A host application can retrieve it using `GetVariable` after
 execution has completed.
 
-------------------------------------------------------------------------
+---
 
 ## 13. Host application integration
 
@@ -1174,21 +1207,16 @@ services and hardware.
 
 ### 13.1 Host bridge API
 
-  ----------------------------------------------------------------------------
-  Interface                    Direction               Purpose
-  ---------------------------- ----------------------- -----------------------
-  `SetVariable(Name, Value)`   Host → BASIC-58         Supply a numeric value
-
-  `GetVariable(Name)`          Host ← BASIC-58         Retrieve a numeric
-                                                       variable
-
-  `@HOST STATE "NAME" VALUE`   BASIC-58 → Host         Send a state-change
-                                                       notification
-  ----------------------------------------------------------------------------
+| Interface | Direction | Purpose |
+| --- | --- | --- |
+| `SetVariable(Name, Value)` | Host → BASIC-58 | Supply a numeric value |
+| `GetVariable(Name)` | Host ← BASIC-58 | Retrieve a numeric variable |
+| `GetVariables()` | Host ← BASIC-58 | Retrieve all current numeric scalar variables |
+| `@HOST STATE "NAME" VALUE` | BASIC-58 → Host | Send a state-change notification |
 
 ### 13.2 SetVariable
 
-``` vb
+```vb
 Interpreter.SetVariable("LEVEL", 20)
 ```
 
@@ -1204,7 +1232,7 @@ at the next `RUN`.
 
 ### 13.3 GetVariable
 
-``` vb
+```vb
 Dim Level As Double = Interpreter.GetVariable("LEVEL")
 ```
 
@@ -1215,9 +1243,23 @@ For asynchronous programs, retrieve the value after the interpreter
 signals that execution has completed, for example in the host's
 `Interpreter_Ready` callback.
 
-### 13.4 @HOST STATE
+### 13.4 GetVariables
 
-``` basic
+```vb
+Dim Variables As Map = Interpreter.GetVariables
+```
+
+`GetVariables` returns a new Map containing the current numeric scalar
+variables and their values.
+
+The returned Map is a snapshot. Changes to it do not modify the
+interpreter's internal variables.
+
+String variables and numeric arrays are not included.
+
+### 13.5 @HOST STATE
+
+```basic
 @HOST STATE "NAME" VALUE
 ```
 
@@ -1226,7 +1268,7 @@ value or numeric expression.
 
 Example:
 
-``` basic
+```basic
 100 @HOST STATE "PUMP" 1
 110 @HOST STATE "ALARM" 0
 ```
@@ -1236,7 +1278,7 @@ When BASIC-58 executes this command, it raises the host's
 
 Example B4J callback:
 
-``` vb
+```vb
 Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
     Log($"[HostStateChanged] ${Name} = ${Value}"$)
 End Sub
@@ -1250,7 +1292,7 @@ directly control hardware or modify an external system. The host
 application decides how to handle the notification. Changing a BASIC-58
 variable does not automatically generate a notification.
 
-### 13.5 Combining the host bridge with serial data
+### 13.6 Combining the host bridge with serial data
 
 A serial device can send a measurement to the host application. The host
 forwards the received frame to BASIC-58, where `ASSIGN` stores the value
@@ -1267,25 +1309,25 @@ For the complete B4J API, callback implementation, communication flow
 and tested host examples, see the separate **BASIC-58 Host Bridge**
 document.
 
-------------------------------------------------------------------------
+---
 
 ## 14. Keyboard shortcuts
 
 The B4XPages application provides the following function-key shortcuts.
 
-  Key     Action
-  ------- ----------------------------
-  `F1`    Display help
-  `F4`    Renumber program (`RENUM`)
-  `F5`    Run program
-  `F6`    List program
-  `F7`    Load program
-  `F8`    Save program
-  `F9`    Create a new program
-  `F10`   Clear terminal
-  `F11`   Toggle full-screen mode
+| Key | Action |
+| --- | --- |
+| `F1` | Display help |
+| `F4` | Renumber program (`RENUM`) |
+| `F5` | Run program |
+| `F6` | List program |
+| `F7` | Load program |
+| `F8` | Save program |
+| `F9` | Create a new program |
+| `F10` | Clear terminal |
+| `F11` | Toggle full-screen mode |
 
-------------------------------------------------------------------------
+---
 
 ## 15. Language limitations and compatibility
 
@@ -1294,24 +1336,24 @@ not intended to be a complete implementation of any historical BASIC.
 
 Important language characteristics include:
 
--   `LET` is required for ordinary variable assignments.
--   Numeric variable names can contain up to eight characters.
--   `FOR` loop variables must be single letters from `A` to `Z`.
--   `IF ... THEN` branches to a line number; inline statements are not
-    supported.
--   Arrays are one-dimensional numeric arrays with indices starting at
-    1.
--   User-defined functions return numeric values.
--   `ASSIGN` receives external numeric data and does not accept string
-    variables.
--   `PRINT` semicolons do not insert spaces automatically.
+- `LET` is required for ordinary variable assignments.
+- Numeric variable names can contain up to eight characters.
+- `FOR` loop variables must be single letters from `A` to `Z`.
+- `IF ... THEN` branches to a line number; inline statements are not
+  supported.
+- Arrays are one-dimensional numeric arrays with indices starting at
+  1.
+- User-defined functions return numeric values.
+- `ASSIGN` receives external numeric data and does not accept string
+  variables.
+- `PRINT` semicolons do not insert spaces automatically.
 
 The language is intentionally kept small, readable and practical.
 Hardware and host integration are provided through explicit extensions
 rather than by making the core language dependent on a particular
 device.
 
-------------------------------------------------------------------------
+---
 
 ## 16. Example programs
 
@@ -1320,21 +1362,21 @@ features and practical applications.
 
 Typical categories include:
 
--   Language fundamentals and expressions.
--   Mathematical and practical calculations.
--   Games and interactive examples.
--   Serial communication and hardware control.
--   Development and regression tests.
+- Language fundamentals and expressions.
+- Mathematical and practical calculations.
+- Games and interactive examples.
+- Serial communication and hardware control.
+- Development and regression tests.
 
 The examples are intended to be read, modified and run. They provide
 practical demonstrations of the statements and functions described in
 this manual.
 
-------------------------------------------------------------------------
+---
 
 ## 17. Version information
 
-This manual describes BASIC-58 **Version 1.0.0**, Build **20261123**.
+This manual describes BASIC-58 **Version 1.0.1**, Build **20261125**.
 
 The implementation is developed with B4J and uses a B4XPages application
 for its graphical user interface.
@@ -1342,15 +1384,15 @@ for its graphical user interface.
 For project background, installation information, release notes and
 examples, see the project `README.md`.
 
-------------------------------------------------------------------------
+---
 
 ## 18. License
 
 BASIC-58 is distributed under the MIT License. See the project's
 `LICENSE` file for the complete license text.
 
-------------------------------------------------------------------------
+---
 
-*BASIC-58 --- Retro BASIC Interpreter*\
+*BASIC-58 — Retro BASIC Interpreter*  
 *Made with curiosity, a little nostalgia, and the conviction that BASIC
 still has something to teach us.*

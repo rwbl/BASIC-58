@@ -303,12 +303,6 @@ Private Sub Interpreter_Ready
     Log($"[HOST] Temperature received: ${Temperature}"$)
 End Sub
 
-' Interpreter_WaitingForDelay
-' handling DELAY command
-Private Sub Interpreter_WaitingForDelay
-	Log($"[Main.Interpreter_WaitingForDelay] delay=${Interpreter.GetDelayMilliseconds}"$)
-End Sub
-
 Private Sub Interpreter_HardwareCommand(Command As String)
 	Log($"[Main.Interpreter_HardwareCommand] ${Command}"$)
 	Serial.ExecuteCommand(Command)

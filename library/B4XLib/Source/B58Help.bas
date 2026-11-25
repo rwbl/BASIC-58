@@ -227,6 +227,7 @@ Notes:
   INT(x)        Integer part
   SGN(x)        Sign of a number
   SQR(x)        Square root
+	FIX(x)		Truncates toward zero.
 
   ROUND(n)	    Round to the nearest integer
   ROUND(n,m)    Round to m decimal places; negative m rounds to tens, hundreds, etc.
@@ -246,6 +247,8 @@ Notes:
   RND(x)        Random number
 
   UBOUND(array) Return the upper array index
+
+  PI and E      Predefined numeric constants.
 
 
 8. STRING AND CONVERSION FUNCTIONS
@@ -274,6 +277,10 @@ Notes:
   HEX(x)        Convert integer to hexadecimal string
   BIN(x)        Convert integer to binary string
   OCT(x)        Convert integer to octal string
+
+  DATE$(0)      Returns the system date using the current B4X date format.
+  TIME$(0)      Returns the system time using the current B4X time format.
+                Both date/time functions accept only 0 at present.
   
 9. PRINT FORMATTING
 
@@ -329,7 +336,19 @@ Notes:
 12. EXECUTION COMMANDS
 
   @DELAY milliseconds
-      Pause program execution asynchronously
+      Pause program execution for the specified
+      number of milliseconds.
+
+      Execution resumes automatically when the
+      delay expires. The interpreter manages the
+      delay internally; no host timer or callback
+      is required.
+	  
+	  Example:
+		10 PRINT "PROGRAM STARTED"
+		20 @DELAY 5000
+		30 PRINT "PROGRAM CONTINUED"
+		40 END
 
 13. SERIAL COMMANDS
 
