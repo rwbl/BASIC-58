@@ -97,3 +97,46 @@ Initial host bridge completed -> The first milestone is done.
 Future extensions pending.
 
 ---
+
+## SubString
+For consideration as provided by Anywhere Software:
+```
+'Returns the substring from StartIndex up to, but excluding, EndIndex.
+'Negative indices count back from the end. Omit EndIndex or pass 0 to include the rest of the string.
+'Indices are clamped to the string bounds.
+Public Sub SubString(s As String, StartIndex As Int, EndIndex As Int = 0) As String
+    If StartIndex < 0 Then 
+        StartIndex = Max(0, s.Length + StartIndex)
+    Else
+        StartIndex = Min(s.Length, StartIndex)
+    End If
+    If EndIndex <= 0 Then
+        EndIndex = Max(0, s.Length + EndIndex)
+    Else
+        EndIndex = Min(s.Length, EndIndex)
+    End If
+    If EndIndex <= StartIndex Then Return ""
+    Return s.SubString2(StartIndex, EndIndex)
+End Sub
+```
+### Status Low Priority.
+Revisit only if it becomes troublesome.
+
+## Text Graphics Support
+For an 80×40 character screen, without introducing pixel graphics:
+- Text graphics: draw walls, paths, objects and characters using ASCII characters.
+- Screen positioning: LOCATE row, column.
+- Character output: PRINT at a specific position.
+- Keyboard interaction: read keys without waiting for Enter.
+- Simple games: Pong-like games, Snake, maze exploration, reaction games.
+
+B58TextGraphics.bas would be a dedicated class, keeping graphics functionality outside B58Interpreter.
+A possible responsibility split:
+- B58Interpreter: BASIC language commands and execution.
+- B58TextGraphics: character screen, cursor positioning, clearing and drawing.
+- HOST application: actual display and keyboard interaction.
+That also leaves the door open for different host implementations without complicating the interpreter.
+First milestone would simply be an 80×40 character screen with CLS, LOCATE and positioned text output.
+### Status Low Priority.
+Not started.
+
