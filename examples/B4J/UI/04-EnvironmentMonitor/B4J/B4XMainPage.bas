@@ -23,7 +23,7 @@ Version=9.85
 #Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
 
 Sub Class_Globals
-	Private VERSION As String = "HOSTControl v20261124"
+	Private VERSION As String = "EnvironmentMonitor v20261125"
 	Private ABOUT As String = "BASIC-58 Example (c) Robert W.B. Linn 2026 - MIT"
 	
 	' UI Base
@@ -34,6 +34,7 @@ Sub Class_Globals
 	Private btnHostControlReset As B4XView
 	Private btnHostControlRun As B4XView
 	Private btnHostControlStop As B4XView
+	Private btnHostTest As B4XView
 	Private btnProgramOutputClear As B4XView
 	Private btnHostOutputClear As B4XView
 	Private taB58SourceEditor As TextArea
@@ -48,33 +49,15 @@ Sub Class_Globals
 	Private Interpreter As B58Interpreter
 	Private Serial As B58Serial
 	
-'	Private TestCode As String = $"05 REM Test
-'10 PRINT "HOST CONTROL TEST"
-'20 IF STOP = 1 THEN 60
-'30 PRINT "PROGRAM CONTINUES"
-'40 GOTO 20
-'60 PRINT "STOP REQUEST RECEIVED"
-'70 END
-'"$
-
-'	Private TestCode As String = $"05 REM Test
-'10 PRINT "HOST NOTIFICATION TEST"
-'20 @HOST STATE "PUMP" 1
-'30 @HOST STATE "PUMP" 0
-	'40 End
-	'"$
-
-	Private TestCode As String = $"05 REM Test
-10 @SER CONNECT COM10
-20 LET LED = 18
-30 PRINT "SWITCH LED ON"
-40 @SER LED 4 1
-50 @DELAY 1000
-60 PRINT "SWITCH LED OFF"
-70 @SER LED 4 0
-80 @SER DISCONNECT
-90 PRINT "DONE"
-100 END
+	Private TestCode As String = $"10 REM ENVIRONMENT MONITOR - TEMPERATURE
+20 @SER CONNECT COM10
+30 PRINT "TEMPERATURE MONITOR"
+40 ASSIGN ADR,CMD,VAL
+50 IF ADR <> 1 THEN 40
+60 IF CMD <> 1 THEN 40
+70 LET TEMP = VAL
+80 PRINT "TEMPERATURE: "; TEMP; " C"
+90 GOTO 40
 "$
 End Sub
 
@@ -116,6 +99,7 @@ Private Sub btnHostControlRun_Click
 End Sub
 
 Private Sub btnHostControlStop_Click
+	Serial.ExecuteCommand("@SER DISCONNECT")
 	Interpreter.ExecuteCommand("BREAK")
 	PrintText(taB58ProgramOutput, "STOP")
 End Sub
@@ -130,6 +114,10 @@ End Sub
 
 Private Sub btnHostOutputClear_Click
 	taHostOutput.Text = ""
+End Sub
+
+Private Sub btnHostTest_Click
+	Serial.ExecuteCommand("@SER 2 0 0")
 End Sub
 
 ' ----------------------------------------------------------------
@@ -153,10 +141,13 @@ End Sub
 ' Interpreter_Ready
 ' Add to the program output
 Private Sub Interpreter_Ready
-    Dim Vars As Map = Interpreter.GetVariables
-    For Each Name As String In Vars.Keys
-        PrintText(taHostOutput, Name & " = " & Vars.Get(Name))
-    Next
+	PrintText(taHostOutput, $"[HOST Ready]"$)
+	
+	' No action but here to show how to get all vars
+'    Dim Vars As Map = Interpreter.GetVariables
+'    For Each Name As String In Vars.Keys
+'		PrintText(taHostOutput, $"[HOST Ready] ${Name} = ${Vars.Get(Name)}"$)
+'    Next
 End Sub
 
  Private Sub Interpreter_ProgramRenumbered(ProgramText As String)
@@ -166,7 +157,7 @@ End Sub
 ' Interpreter_HostStateChanged
 ' Listen to host variable state changes
 Private Sub Interpreter_HostStateChanged(Name As String, Value As Double)
-	PrintText(taHostOutput, Name & " = " & Value)
+	PrintText(taHostOutput, $"[HOST StateChanged] ${Name} = ${Value}"$)
 End Sub
 
 Private Sub Interpreter_HardwareCommand(Command As String)
@@ -180,40 +171,40 @@ End Sub
 ' ----------------------------------------------------------------
 #Region B58Serial
 Private Sub Serial_Connected
-	PrintText(taHostOutput, "[BASIC-58] Controller connected.")
+	PrintText(taHostOutput, "[Serial Connected] Controller connected.")
 	Sleep(2000) ' Allow Arduino UNO reset
 	Interpreter.ResumeHardwareCommand
 End Sub
 
 Private Sub Serial_CommandCompleted(Frame() As Byte)
-	PrintText(taHostOutput, $"[BASIC-58] ACK received: ${bc.HexFromBytes(Frame)}"$)
+	PrintText(taHostOutput, $"[Serial CommandCompleted] ACK received: ${bc.HexFromBytes(Frame)}"$)
 	Interpreter.ResumeHardwareCommand
 End Sub
 
 Private Sub Serial_CommandError(Message As String)
-	PrintText(taHostOutput, "[BASIC-58][E] " & Message)
+	PrintText(taHostOutput, "[Serial CommandError][E] " & Message)
 	Interpreter.ResumeHardwareCommand
 End Sub
 
 Private Sub Serial_Disconnected
-	PrintText(taHostOutput, "[BASIC-58] Controller disconnected.")
+	PrintText(taHostOutput, "[Serial Disconnected] Controller disconnected.")
 	Interpreter.ResumeHardwareCommand
 	Interpreter.ExternalDataDisconnected
 End Sub
 
 Private Sub Serial_Error(Message As String)
-	PrintText(taHostOutput, "[BASIC-58][E] " & Message)
+	PrintText(taHostOutput, "[Serial Error][E] " & Message)
 End Sub
 
 Private Sub Serial_PortsFound(Ports As List)
-	PrintText(taHostOutput, "AVAILABLE SERIAL PORTS:")
+	PrintText(taHostOutput, "[Serial Ports Found] AVAILABLE SERIAL PORTS:")
 	For Each Port As String In Ports
 		PrintText(taHostOutput, Port)
 	Next
 End Sub
 
 Private Sub Serial_NoPortsFound
-	PrintText(taHostOutput, "NO SERIAL PORTS FOUND.")
+	PrintText(taHostOutput, "[Serial NoPortsFound] NO SERIAL PORTS FOUND.")
 End Sub
 
 Private Sub Serial_DataReceived(Frame() As Byte)
@@ -222,12 +213,17 @@ Private Sub Serial_DataReceived(Frame() As Byte)
 	Dim Cmd As Byte = B58Protocol.GetCmd(Frame)
 	Dim Val As Byte = B58Protocol.GetVal(Frame)
 
-	Log($"[BASIC-58] Received: ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
+	Log($"[Serial DataReceived] ADR=${B58Protocol.ToUnsigned(Adr)} CMD=${B58Protocol.ToUnsigned(Cmd)} VAL=${B58Protocol.ToUnsigned(Val)}"$)
 
 	Interpreter.SubmitExternalData( _
     	B58Protocol.ToUnsigned(Adr), _
     	B58Protocol.ToUnsigned(Cmd), _
     	B58Protocol.ToUnsigned(Val))
+		
+	Select Adr
+		Case EnvironmentProtocol.HUM_ADR
+			PrintText(taHostOutput, $"[Serial DataReceived] H=${Val}"$)
+	End Select
 End Sub
 #End Region
 

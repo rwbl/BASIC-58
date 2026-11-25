@@ -8,6 +8,7 @@
 - NEW: Numeric function `FIX(x)` to truncate a value toward zero.
 - NEW: Predefined numeric constants `PI` and `E`.
 - NEW: String functions `DATE$(0)` and `TIME$(0)` to retrieve the current system date and time.
+- NEW: Examples > B4J > UI > HOSTControl, TankSimulation, EnvironmentMonitor
 - UPD: Moved `@DELAY` timing into `B58Interpreter`. Program execution now resumes automatically when the internal delay timer expires.
 - DEL: Removed the host-side `_WaitingForDelay` callback. Host applications no longer need to implement delay timing.
 
