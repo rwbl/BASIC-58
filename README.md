@@ -75,7 +75,7 @@ It provides a simple environment to explore programming concepts, write small pr
 ## Screenshot
 
 <p align="center">
-<img src="images/BASIC-58-3.png" alt="BASIC-58" width="600">
+<img src="images/BASIC-58-3.png" alt="BASIC-58" width="700">
 </p>
 
 ------------------------------------------------------------------------
