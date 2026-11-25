@@ -75,7 +75,7 @@ It provides a simple environment to explore programming concepts, write small pr
 ## Screenshot
 
 <p align="center">
-<img src="images/BASIC-58-1.png" alt="BASIC-58 running a temperature conversion program" width="400">
+<img src="images/BASIC-58-3.png" alt="BASIC-58 running a temperature conversion program" width="400">
 </p>
 
 ------------------------------------------------------------------------
