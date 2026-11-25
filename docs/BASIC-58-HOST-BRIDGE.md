@@ -1,5 +1,11 @@
 # BASIC-58 Host Bridge
 
+**Version:** 1.0.0\
+**Build:** 20261125\
+**Document:** Host Bridge Manual
+
+------------------------------------------------------------------------
+
 ## Overview
 
 The BASIC-58 Host Bridge allows an external application to communicate directly with the BASIC-58 interpreter.
@@ -86,6 +92,39 @@ For example:
 The host can supply values before starting the program.
 
 **Important:** Host-supplied values are copied into the normal variable map when `RUN` starts. Calling `SetVariable` while a program is already executing does not immediately update its active BASIC variable. The new value will be available at the next `RUN`.
+
+### Using host variables in BASIC-58
+
+Variables supplied by the host application are available directly to BASIC-58 programs. There is no need to assign them again using `LET`.
+
+The host application sets a variable before starting the BASIC-58 program:
+
+```vb
+Interpreter.SetVariable("STOP", 1)
+Interpreter.LoadProgram(taB58SourceEditor.Text)
+Interpreter.RunProgram
+```
+
+The BASIC-58 program can use the variable directly in expressions and conditions:
+
+```basic
+10 PRINT "HOST CONTROL TEST"
+20 IF STOP = 1 THEN 60
+30 PRINT "PROGRAM CONTINUES"
+40 GOTO 20
+60 PRINT "STOP REQUEST RECEIVED"
+70 END
+```
+
+**Important:**
+
+- `SetVariable` stores the value supplied by the host.
+- At the beginning of `RunProgram`, host variables are copied into the BASIC-58 variable table.
+- Host variables can be used directly in BASIC-58 expressions and conditions.
+- No explicit `LET` statement is required to initialize a host-provided variable.
+- `GetVariable` can retrieve the current value after program execution.
+
+This allows the host application to influence BASIC-58 program flow without introducing additional BASIC statements or special syntax.
 
 ## 2. BASIC-58 → Host: @HOST STATE
 
@@ -214,6 +253,28 @@ Example:
 ```vb
 Dim Temperature As Double = Interpreter.GetVariable("TEMP")
 Log(Temperature)
+```
+
+### GetVariables
+```
+Public Sub GetVariables As Map
+```
+Returns all current BASIC-58 numeric variables and their values.
+
+The returned Map is a snapshot of the interpreter's current variable state. 
+Modifying the returned Map does not affect the interpreter.
+
+Return value:
+- Map containing variable names and their current numeric values.
+- Empty Map if no variables exist.
+
+Example:
+```
+Dim Variables As Map = Interpreter.GetVariables
+
+For Each Name As String In Variables.Keys
+    Log(Name & " = " & Variables.Get(Name))
+Next
 ```
 
 ### HostStateChanged

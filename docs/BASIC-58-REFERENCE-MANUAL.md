@@ -1,7 +1,7 @@
 # BASIC-58 Reference Manual
 
 **Version:** 1.0.0\
-**Build:** 20261123\
+**Build:** 20261125\
 **Document:** Language and environment reference
 
 ------------------------------------------------------------------------

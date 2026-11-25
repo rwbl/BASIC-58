@@ -1,37 +1,30 @@
 # BASIC-58
 
 <p align="left">
-<img src="images/BASIC-58-Logo.png"
-       alt="BASIC-58"
-       width="200">
+<img src="images/BASIC-58-Logo.png" alt="BASIC-58" width="200">
 </p>
 
 **Version 1.0.0**
 
 **BASIC-58 - Retro BASIC Interpreter**
 
-An experimental BASIC interpreter written in BASIC (B4X), inspired by
-retro computing.
+An experimental BASIC interpreter written in BASIC (B4X), inspired by retro computing.
 
 ------------------------------------------------------------------------
 
 ## About BASIC-58
 
-**BASIC-58** is a small, retro-inspired BASIC interpreter developed as a
-hobby project using [B4J](https://www.b4x.com/b4j.html).
+**BASIC-58** is a small, retro-inspired BASIC interpreter developed as a hobby project using [B4J](https://www.b4x.com/b4j.html).
 
-The project explores how a BASIC interpreter works internally, from
-parsing and evaluating expressions to managing program flow and handling
-runtime errors. It was inspired by classic computers and projects such
-as [MEGS65](https://github.com/MEGS65) and
-[Xemu](https://github.com/theretroweb/xemu).
+The project explores how a BASIC interpreter works internally, from parsing and evaluating expressions to managing program flow and handling runtime errors.   
+It was inspired by classic computers and projects such as [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu).
 
 **BASIC-58** is also an educational project, designed to encourage learning through experimentation. 
 It provides a simple environment to explore programming concepts, write small programs, and understand how computers execute instructions.
 
 ### A little bit of retro irony
 
-BASIC-58 is itself written in BASIC --- specifically, B4J.
+**BASIC-58** is itself written in **BASIC** --- specifically, **B4J**.
 
 `So BASIC is being used to bring BASIC back.`
 
@@ -39,20 +32,17 @@ BASIC-58 is itself written in BASIC --- specifically, B4J.
 
 ## Features
 
-BASIC-58 implements a practical subset of classic, line-numbered BASIC,
-with extensions for hardware and host application integration.
+**BASIC-58** implements a practical subset of classic, line-numbered BASIC, with extensions for hardware and host application integration.
 
 ### Programming environment
 
 -   Interactive BASIC command prompt.
--   Numbered program lines, including automatic line numbering when
-    loading editor source.
+-   Numbered program lines, including automatic line numbering when loading editor source.
 -   Immediate-mode commands and expressions.
 -   Program editing, listing, renumbering, saving and loading.
 -   Program interruption with `BREAK`.
 -   Configurable terminal clearing when `RUN` starts.
--   B4XPages user interface with function-key shortcuts and full-screen
-    mode.
+-   B4XPages user interface with function-key shortcuts and full-screen mode.
 
 ### BASIC language
 
@@ -85,9 +75,7 @@ with extensions for hardware and host application integration.
 ## Screenshot
 
 <p align="center">
-<img src="images/BASIC-58-1.png"
-       alt="BASIC-58 running a temperature conversion program"
-       width="400">
+<img src="images/BASIC-58-1.png" alt="BASIC-58 running a temperature conversion program" width="400">
 </p>
 
 ------------------------------------------------------------------------
@@ -105,8 +93,8 @@ The application is developed with B4J.
 
 ## Getting started
 
-Start BASIC-58 to open the interactive command prompt. You can enter
-commands directly or create a numbered BASIC program.
+Start **BASIC-58** to open the interactive command prompt. 
+You can enter commands directly or create a numbered BASIC program.
 
 Try this first program:
 
@@ -134,18 +122,14 @@ THE SUM IS 30
 
 ### A few BASIC-58 reminders
 
--   BASIC statements are numbered.
--   Use `LET` for ordinary assignments, for example `LET TOTAL = A + B`.
--   `IF` branches to a line number, for example
-    `IF ANSWER = 42 THEN 100`.
--   `FOR` loop variables must be single letters.
--   Variable names can contain up to eight characters.
--   `INPUT` reads keyboard input; `ASSIGN` receives external numeric
-    data.
--   `RND(1)` produces a random value. `INT(RND(1) * N) + 1` produces an
-    integer from 1 through N.
--   A `PRINT` semicolon does not insert a space. Include a trailing
-    space in the text when needed, for example `PRINT "SAVED "; SAVED`.
+- BASIC statements are numbered.
+- Use `LET` for ordinary assignments, for example `LET TOTAL = A + B`.
+- `IF` branches to a line number, for example `IF ANSWER = 42 THEN 100`.
+- `FOR` loop variables must be single letters.
+- Variable names can contain up to eight characters.
+- `INPUT` reads keyboard input; `ASSIGN` receives external numeric data.
+- `RND(1)` produces a random value. `INT(RND(1) * N) + 1` produces an integer from 1 through N.
+- `PRINT` semicolon does not insert a space. Include a trailing space in the text when needed, for example `PRINT "SAVED "; SAVED`.
 
 ------------------------------------------------------------------------
 
@@ -185,13 +169,13 @@ number without a statement deletes it.
 
 ## Hardware communication
 
-BASIC-58 can communicate with external controllers over a serial
+**BASIC-58** can communicate with external controllers over a serial
 connection. The serial interface is designed to be simple and
 independent of the specific hardware.
 
 The basic commands are:
 
-``` text
+```basic
 @SER CONNECT COMx
 @SER DISCONNECT
 @SER LISTPORTS
@@ -202,15 +186,15 @@ The generic `@SER ADR CMD VAL` command sends a device address, command
 code and value. Each parameter accepts a numeric literal, numeric
 variable or parenthesized numeric expression.
 
-BASIC-58 uses a fixed five-byte frame:
+**BASIC-58** uses a fixed five-byte frame:
 
-``` text
+```text
 0x19 | ADR | CMD | VAL | 0x58
 ```
 
 External numeric data is received with `ASSIGN`:
 
-``` basic
+```basic
 10 @SER CONNECT COM10
 20 PRINT "WAITING FOR TEMPERATURE..."
 30 ASSIGN TEMP
@@ -219,20 +203,18 @@ External numeric data is received with `ASSIGN`:
 60 END
 ```
 
-`ASSIGN TEMP` assigns the value field of the next incoming frame to the
-BASIC variable `TEMP`. The three-field form, `ASSIGN ADR,CMD,VAL`,
-assigns all three frame fields.
+`ASSIGN TEMP` assigns the value field of the next incoming frame to the BASIC variable `TEMP`.   
+The three-field form, `ASSIGN ADR,CMD,VAL`, assigns all three frame fields.
 
-The host application handles the serial transport, framing and
-asynchronous connection operations. The connected controller defines the
-meaning of individual commands.
+The host application handles the serial transport, framing and asynchronous connection operations.   
+The connected controller defines the meaning of individual commands.
 
 ------------------------------------------------------------------------
 
 ## Host application integration
 
-BASIC-58 can be embedded in a host application. The host bridge provides
-a small interface:
+**BASIC-58** can be embedded in a host application.   
+The host bridge provides a small interface:
 
 |  Interface                  | Direction        | Purpose
 | --------------------------- | ---------------- | -----------------------
@@ -240,20 +222,17 @@ a small interface:
 | `GetVariable(Name)`         | Host ← BASIC-58  | Retrieve a numeric variable
 | `@HOST STATE "NAME" VALUE`  | BASIC-58 → Host  | Send a state-change notification
 
-Host-supplied values are copied into the BASIC variable set when `RUN`
-starts. `@HOST STATE` raises a callback; the host application decides
-what action to perform.
+- Host-supplied values are copied into the BASIC variable set when `RUN` starts.  
+- `@HOST STATE` raises a callback; the host application decides what action to perform.
 
-For the complete API, callback examples, serial integration details and
-implementation notes, see the [BASIC-58 Host Bridge
-documentation](docs/BASIC-58-HOST-BRIDGE.md).
+For the complete API, callback examples, serial integration details and implementation notes, see the [BASIC-58 Host Bridge documentation](docs/BASIC-58-HOST-BRIDGE.md).
 
 ------------------------------------------------------------------------
 
 ## Example programs
 
-The project includes BASIC programs organized by topic. The examples are
-intended to be loaded, run, read and modified.
+The project includes BASIC programs organized by topic.   
+The examples are intended to be loaded, run, read and modified.
 
 | Folder            | Contents                                                     | 
 | ----------------- | ------------------------------------------------------------ | 
@@ -275,15 +254,11 @@ Saving Goal, and Rock Paper Scissors.
 The README introduces the project and provides a quick start. The
 detailed language and command descriptions are maintained separately.
 
--   **[BASIC-58 Reference Manual](docs/BASIC-58-REFERENCE-MANUAL.md)**
-    --- complete language and environment reference, including
-    statements, functions, arrays, error handling, system commands,
-    serial communication and host integration.
--   **[BASIC-58 Host
-    Bridge](Documentation/BASIC58_Host_Bridge_README.md)** --- host API,
-    callbacks and integration examples.
--   `HELP.TXT` --- quick reference available from the BASIC-58
-    application.
+- **[BASIC-58 Reference Manual](docs/BASIC-58-REFERENCE-MANUAL.md)**
+	- complete language and environment reference, including statements, functions, arrays, error handling, system commands, serial communication and host integration.
+- **[BASIC-58 Host Bridge](Documentation/BASIC58_Host_Bridge_README.md)**
+	- Host API, callbacks and integration examples.
+- `HELP.TXT` - quick reference available from the BASIC-58 application.
 
 ------------------------------------------------------------------------
 
@@ -306,28 +281,22 @@ The example programs are also used as practical language tests.
 
 ## BASIC-58 and classic BASIC
 
-BASIC-58 is inspired by traditional line-numbered BASIC dialects such as
-Microsoft GW-BASIC. It is not intended to be a complete implementation
-of GW-BASIC or any other historical BASIC dialect.
-
-It keeps the familiar programming style while deliberately limiting the
-language to a manageable set of statements, expressions and functions.
+**BASIC-58** is inspired by traditional line-numbered BASIC dialects such as Microsoft GW-BASIC.  
+It is not intended to be a complete implementation of GW-BASIC or any other historical BASIC dialect.
+It keeps the familiar programming style while deliberately limiting the language to a manageable set of statements, expressions and functions.
 
 Some important distinctions:
 
--   `LET` is required for ordinary assignments.
--   Variable names are limited to eight characters.
--   `FOR` loop variables must be single letters.
--   `IF ... THEN` branches to a line number; inline statements after
-    `THEN` are not supported.
--   Arrays are one-dimensional numeric arrays.
--   `ASSIGN`, `@SER`, `@DELAY`, `@HOST STATE` and `@SYS` provide
-    extensions for external data, hardware and host applications.
+- `LET` is required for ordinary assignments.
+- Variable names are limited to eight characters.
+- `FOR` loop variables must be single letters.
+- `IF ... THEN` branches to a line number; inline statements after `THEN` are not supported.
+- Arrays are one-dimensional numeric arrays.
+- `ASSIGN`, `@SER`, `@DELAY`, `@HOST STATE` and `@SYS` provide extensions for external data, hardware and host applications.
 
 The goal is simplicity, readability and experimentation.
 
-**Small enough to understand, powerful enough to be useful, and fun to
-program!**
+**Small enough to understand, powerful enough to be useful, and fun to program!**
 
 ------------------------------------------------------------------------
 
@@ -353,36 +322,24 @@ See the [LICENSE](LICENSE) file for details.
 
 ## Credits, acknowledgements and inspiration
 
--   [Anywhere Software](https://www.b4x.com/) for the B4X suite of RAD
-    development tools.
--   [MEGS65](https://github.com/MEGS65) and
-    [Xemu](https://github.com/theretroweb/xemu) for inspiration from the
-    retro-computing community.
--   [OpenAI](https://openai.com/) and ChatGPT for AI-assisted
-    engineering collaboration, problem solving and development
-    discussions.
--   The wider programming and open-source communities for sharing
-    knowledge, ideas and experience.
+- [Anywhere Software](https://www.b4x.com/) for the B4X suite of RAD development tools.
+- [MEGS65](https://github.com/MEGS65) and [Xemu](https://github.com/theretroweb/xemu) for inspiration from the retro-computing community.
+- [OpenAI](https://openai.com/) and ChatGPT for AI-assisted engineering collaboration, problem solving and development discussions.
+- The wider programming and open-source communities for sharing knowledge, ideas and experience.
 
 ------------------------------------------------------------------------
 
 ## Disclaimer
 
-**BASIC-58** is an experimental hobby project developed for educational
-and learning purposes.
+**BASIC-58** is an experimental hobby project developed for educational and learning purposes.
 
--   The software is provided "AS IS", without warranty of any kind.
--   It is not intended for professional, commercial, safety-critical or
-    industrial control applications.
--   It has not been designed, tested or certified for use in critical or
-    production environments.
--   Use of the software is entirely at your own risk.
+- The software is provided "AS IS", without warranty of any kind.
+- It is not intended for professional, commercial, safety-critical or industrial control applications.
+- It has not been designed, tested or certified for use in critical or production environments.
+- Use of the software is entirely at your own risk.
 
-All product names, logos, trademarks and brands mentioned in this
-project are the property of their respective owners.
+All product names, logos, trademarks and brands mentioned in this project are the property of their respective owners.
 
 ------------------------------------------------------------------------
 
-> *BASIC-58 --- Made with curiosity, a little nostalgia, and the
-> conviction that BASIC still has something to teach us.*
-s
+> *BASIC-58 --- Made with curiosity, a little nostalgia, and the conviction that BASIC still has something to teach us.*
